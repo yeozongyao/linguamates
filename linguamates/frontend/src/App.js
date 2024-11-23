@@ -21,6 +21,7 @@ import CombinedDashboard from "./components/CombinedDashboard";
 import TutorList from "./components/TutorList";
 import Profile from "./pages/Profile";
 import FloatingChatIcon from "./components/FloatingChatIcon";
+import Schedule from "./pages/Schedule";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const AppContent = () => {
                 </PrivateRoute>
               }
             />
+            <Route path="/schedule" element={<Schedule />} />
             <Route
               path="/find-tutor"
               element={

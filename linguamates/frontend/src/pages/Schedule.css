@@ -1,0 +1,115 @@
+/* Schedule.css */
+.schedule-container {
+    min-height: 100vh;
+    background: linear-gradient(to bottom, #fff5d6, #ffe4a0);
+    padding: 3rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.schedule-title {
+    color: #8B4513;
+    font-size: 2.25rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.schedule-form {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 28rem;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #8B4513;
+    margin-bottom: 0.25rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: #fff5d6;
+    color: #8B4513;
+    border: 2px solid #DEB887;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #8B4513;
+}
+
+.form-input::placeholder {
+    color: rgba(184, 134, 11, 0.5);
+}
+
+.submit-button {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background-color: #8B4513;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.submit-button:hover {
+    background-color: #6B4423;
+    transform: scale(1.02);
+}
+
+.submit-button:active {
+    transform: scale(0.98);
+}
+
+.submit-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Additional styles for form validation */
+.form-input:invalid {
+    border-color: #dc2626;
+}
+
+.form-input[type="date"],
+.form-input[type="time"] {
+    appearance: none;
+    padding-right: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .schedule-container {
+        padding: 2rem 1rem;
+    }
+
+    .schedule-title {
+        font-size: 1.875rem;
+    }
+
+    .schedule-form {
+        padding: 1.5rem;
+    }
+}
