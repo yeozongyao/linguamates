@@ -1,0 +1,72 @@
+/* Add these styles to your existing Goals.css */
+
+.current-goals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.goal-icon-card {
+    background-color: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.goal-icon-card:hover {
+    transform: translateY(-2px);
+}
+
+.icon-wrapper {
+    background-color: #fff5d6;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.goal-icon {
+    color: #8B4513;
+    width: 24px;
+    height: 24px;
+}
+
+.goal-info {
+    flex-grow: 1;
+}
+
+.goal-info h3 {
+    color: #8B4513;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin: 0;
+    margin-bottom: 0.25rem;
+}
+
+.goal-value {
+    color: #6B4423;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .current-goals {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .current-goals {
+        grid-template-columns: 1fr;
+    }
+}

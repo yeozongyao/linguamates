@@ -22,6 +22,7 @@ import TutorList from "./components/TutorList";
 import Profile from "./pages/Profile";
 import FloatingChatIcon from "./components/FloatingChatIcon";
 import Schedule from "./pages/Schedule";
+import Goals from "./pages/Goals";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const AppContent = () => {
               }
             />
             <Route path="/schedule" element={<Schedule />} />
+            <Route path="/goals" element={<Goals />} />
             <Route
               path="/find-tutor"
               element={
