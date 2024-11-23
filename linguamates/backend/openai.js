@@ -55,7 +55,15 @@ const getFeedback = async (transcript, language, feedbackLanguage) => {
         },
         { 
           role: "system", 
-          content: `Provide your feedback in ${feedbackLanguage}.` 
+          content: `Provide your feedback in ${feedbackLanguage} in the following JSON format:
+          {
+            "sentenceStructure": "Analysis of sentence structure",
+            "grammarPatterns": "Analysis of grammar patterns",
+            "vocabularySuggestions": "Suggestions for vocabulary",
+            "exampleImprovements": ["Improved sentence 1", "Improved sentence 2"]
+          }
+          Provide the response strictly in JSON format.
+          ` 
         },
         { 
           role: "user", 
@@ -63,7 +71,15 @@ const getFeedback = async (transcript, language, feedbackLanguage) => {
         }
       ],
     });
-    return completion.choices[0].message.content;
+    try {
+      console.log("Parsing")
+      const feedback = JSON.parse(completion.choices[0].message.content);
+      return feedback;
+    } catch (error) {
+      console.error("Error parsing feedback JSON:", error);
+      throw new Error("Failed to parse structured feedback from OpenAI");
+    }
+    // return completion.choices[0].message.content;
   } catch (error) {
     console.error('Error in OpenAI getFeedback:', error);
     throw error  }
