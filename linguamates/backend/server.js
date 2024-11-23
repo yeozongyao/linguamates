@@ -160,6 +160,8 @@ const isAuthenticated = async (req, res, next) => {
     const user = await User.findOne({ username: sessions[sessionId].username });
     if (user) {
       console.log('User authenticated:', user.username);
+      console.log('User authenticated:', user.id);
+
       req.user = { id: user._id, ...sessions[sessionId] };
       next();
     } else {
@@ -292,16 +294,91 @@ app.get('/api/students', isAuthenticated, async (req, res) => {
 //   }
 // });;
 
-app.post('/api/get-feedback', async (req, res) => {
+const saveFeedback = async (userId, transcript, feedback, language, feedbackLanguage) => {
+  try {
+    const aiFeedback = new AIFeedback({
+      userId,
+      transcript,
+      feedback: {
+        sentenceStructure: feedback.sentenceStructure,
+        grammarPatterns: feedback.grammarPatterns,
+        vocabularySuggestions: feedback.vocabularySuggestions,
+        exampleImprovements: feedback.exampleImprovements,
+      },
+      language,
+      feedbackLanguage,
+    });
+    console.log("aifeedbacktosave:", aiFeedback)
+
+    await aiFeedback.save();
+    console.log('AI feedback saved successfully');
+    return aiFeedback;
+  } catch (error) {
+    console.error('Error saving AI feedback:', error);
+    throw error;
+  }
+};
+
+
+
+// app.post('/api/get-feedback', async (req, res) => {
+//   try {
+//     const { transcript, language, feedbackLanguage } = req.body;
+//     console.log(req.body)
+//     const feedback = await getFeedback(transcript, language, feedbackLanguage);
+//     res.json({ feedback });
+//   } catch (error) {
+//     res.status(500).json({ error: 'An error occurred while getting feedback' });
+//   }
+// });
+
+app.post('/api/get-feedback', isAuthenticated, async (req, res) => {
   try {
     const { transcript, language, feedbackLanguage } = req.body;
-    console.log(req.body)
+
+    console.log('Request body:', req.body);
+
+    // Generate feedback using OpenAI
     const feedback = await getFeedback(transcript, language, feedbackLanguage);
-    res.json({ feedback });
+    console.log(feedback)
+    // Save the generated feedback to the database
+    console.log("req.user.id:", req.user.id)
+    const savedFeedback = await saveFeedback(
+      req.user.id,       // Pass the authenticated user's ID
+      transcript,        // Original transcript
+      feedback,          // Generated feedback
+      language,          // Language of the transcript
+      feedbackLanguage   // Language in which feedback is provided
+    );
+
+    // Respond with the saved feedback
+    res.json({ feedback: savedFeedback });
   } catch (error) {
-    res.status(500).json({ error: 'An error occurred while getting feedback' });
+    console.error('Error in /api/get-feedback:', error);
+    res.status(500).json({ error: 'An error occurred while generating and saving feedback' });
   }
 });
+
+app.get('/api/retrieve-feedback', isAuthenticated, async (req, res) => {
+  try {
+    const userId  = req.user.id;
+    console.log("retrieval userid:", userId)
+    // Fetch all feedback related to the authenticated user
+    const feedbackEntries = await AIFeedback.find({ userId }).sort({ createdAt: -1 });
+
+    if (!feedbackEntries || feedbackEntries.length === 0) {
+      return res.status(404).json({ message: 'No feedback found for this user.' });
+    }
+
+    res.json({ feedback: feedbackEntries });
+  } catch (error) {
+    console.error('Error fetching feedback:', error);
+    res.status(500).json({ error: 'An error occurred while fetching feedback.' });
+  }
+});
+
+
+
 
 const { exec } = require('child_process');
 const util = require('util');
@@ -442,10 +519,25 @@ const UserSchema = new mongoose.Schema({
   students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 });
 
+const AIFeedbackSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Reference to the user
+  transcript: { type: String, required: true }, // Original transcript
+  feedback: {
+    sentenceStructure: String, // Feedback on sentence structure
+    grammarPatterns: String,   // Feedback on grammar
+    vocabularySuggestions: String, // Vocabulary suggestions
+    exampleImprovements: [String] // Example revised sentences
+  },
+  language: { type: String, required: true }, // Language of the transcript
+  feedbackLanguage: { type: String, required: true }, // Language in which feedback is provided
+  createdAt: { type: Date, default: Date.now }, // Timestamp of feedback generation
+});
+
 MessageSchema.index({ recipient: 1, read: 1 });
 
 const Message = mongoose.model('Message', MessageSchema);
 const User = mongoose.model('User', UserSchema);
+const AIFeedback = mongoose.model('AIFeedback', AIFeedbackSchema);
 
 const connectionExists = async (studentId, tutorId) => {
   const student = await User.findById(studentId);

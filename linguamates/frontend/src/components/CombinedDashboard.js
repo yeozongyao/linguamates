@@ -289,7 +289,7 @@ const CombinedDashboard = () => {
                 <h2 className="text-xl font-bold text-[#8B4513] mb-6">Quick Actions</h2>
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { icon: MessageSquare, label: 'Practice', link: '/practice' },
+                    { icon: MessageSquare, label: activeRole === 'student' ? 'Goals' : 'Evaluation', link: activeRole === 'student' ? '/goals' : '/evaluation' },
                     { icon: Calendar, label: 'Schedule', link: '/schedule' },
                     { icon: Users, label: activeRole === 'student' ? 'Find Tutor' : 'My Students', link: activeRole === 'student' ? '/find-tutor' : '/students' },
                     { icon: TrendingUp, label: 'Progress', link: '/progress' }

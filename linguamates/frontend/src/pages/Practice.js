@@ -202,6 +202,7 @@ const Practice = () => {
     },
     {
       onSuccess: (data) => {
+        console.log("Feedback data:", data.feedback);
         setTranscript(data.transcript);
         setError("");
         setFile(null);
@@ -510,7 +511,7 @@ const Practice = () => {
                 )}
               </button>
 
-              {getFeedbackMutation.isSuccess && (
+              {getFeedbackMutation.isSuccess && getFeedbackMutation.data?.feedback && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -521,12 +522,33 @@ const Practice = () => {
                     AI Tutor Feedback
                   </h3>
                   <div className="bg-[#fff5d6] rounded-lg p-4">
-                    <p className="text-[#6B4423] whitespace-pre-line">
-                      {getFeedbackMutation.data.feedback}
-                    </p>
+                    <ul className="space-y-2">
+                      {console.log(feedback)}
+                      <li>
+                        <strong>Sentence Structure:</strong> {feedback.feedback.sentenceStructure || "N/A"}
+                      </li>
+                      <li>
+                        <strong>Grammar Patterns:</strong> {feedback.feedback.grammarPatterns || "N/A"}
+                      </li>
+                      <li>
+                        <strong>Vocabulary Suggestions:</strong> {feedback.feedback.vocabularySuggestions || "N/A"}
+                      </li>
+                      <li>
+                        <strong>Example Improvements:</strong>
+                        <ul className="list-disc pl-6">
+                          {feedback.feedback.exampleImprovements?.length > 0
+                            ? feedback.feedback.exampleImprovements.map((example, index) => (
+                                <li key={index}>{example}</li>
+                              ))
+                            : <li>N/A</li>}
+                        </ul>
+                      </li>
+                    </ul>
                   </div>
                 </motion.div>
               )}
+
+
             </motion.div>
           )}
         </AnimatePresence>

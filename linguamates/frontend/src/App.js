@@ -21,6 +21,7 @@ import CombinedDashboard from "./components/CombinedDashboard";
 import TutorList from "./components/TutorList";
 import Profile from "./pages/Profile";
 import FloatingChatIcon from "./components/FloatingChatIcon";
+import Evaluation from "./pages/Evaluation"
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,14 @@ const AppContent = () => {
               element={
                 <PrivateRoute>
                   <Profile />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/evaluation"
+              element={
+                <PrivateRoute>
+                  <Evaluation />
                 </PrivateRoute>
               }
             />
