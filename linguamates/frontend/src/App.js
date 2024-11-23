@@ -3,10 +3,10 @@ import {
   BrowserRouter as Router,
   Route,
   Routes,
-  Navigate,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { UserProvider, useUser } from "./components/UserContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -21,13 +21,11 @@ import CombinedDashboard from "./components/CombinedDashboard";
 import TutorList from "./components/TutorList";
 import Profile from "./pages/Profile";
 import FloatingChatIcon from "./components/FloatingChatIcon";
+import TutorAvailability from "./pages/TutorAvailability";
+import SessionBooking from "./pages/SessionBooking";
+import ScheduleManagement from "./pages/ScheduleManagement";
 
 const queryClient = new QueryClient();
-
-const PrivateRoute = ({ children }) => {
-  const { user } = useUser();
-  return user ? children : <Navigate to="/login" />;
-};
 
 const AppContent = () => {
   const { user } = useUser();
@@ -41,26 +39,28 @@ const AppContent = () => {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            
+            {/* Protected routes for all authenticated users */}
             <Route
               path="/practice"
               element={
-                <PrivateRoute>
+                <ProtectedRoute>
                   <Practice />
-                </PrivateRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/progress"
               element={
-                <PrivateRoute>
+                <ProtectedRoute>
                   <Progress />
-                </PrivateRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/dashboard"
               element={
-                <PrivateRoute>
+                <ProtectedRoute>
                   {user?.role === "student" ? (
                     <StudentDashboard />
                   ) : user?.role === "tutor" ? (
@@ -68,29 +68,61 @@ const AppContent = () => {
                   ) : (
                     <CombinedDashboard />
                   )}
-                </PrivateRoute>
+                </ProtectedRoute>
               }
             />
+
+            {/* Student-specific routes */}
             <Route
               path="/find-tutor"
               element={
-                <PrivateRoute>
+                <ProtectedRoute allowedRoles={['student', 'both']}>
                   <TutorList />
-                </PrivateRoute>
+                </ProtectedRoute>
               }
             />
+
+            {/* Tutor-specific routes */}
+            <Route
+              path="/availability"
+              element={
+                <ProtectedRoute allowedRoles={['tutor', 'both']}>
+                  <TutorAvailability />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Routes for both roles */}
             <Route
               path="/profile"
               element={
-                <PrivateRoute>
+                <ProtectedRoute>
                   <Profile />
-                </PrivateRoute>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/book/:tutorId"
+              element={
+                <ProtectedRoute allowedRoles={['student', 'both']}>
+                  <SessionBooking />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/schedule"
+              element={
+                <ProtectedRoute>
+                  <ScheduleManagement />
+                </ProtectedRoute>
               }
             />
           </Routes>
         </main>
         <Footer />
-        <FloatingChatIcon />
+        {user && <FloatingChatIcon />}
       </div>
     </Router>
   );

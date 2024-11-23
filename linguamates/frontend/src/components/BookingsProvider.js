@@ -102,28 +102,28 @@ const BookingsList = () => {
   );
 };
 
-// Update TutorCard component to include booking functionality
-const TutorCard = ({ tutor }) => {
-  const [showBookingModal, setShowBookingModal] = useState(false);
+// // Update TutorCard component to include booking functionality
+// const TutorCard = ({ tutor }) => {
+//   const [showBookingModal, setShowBookingModal] = useState(false);
 
-  return (
-    <>
-      {/* Existing TutorCard content */}
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setShowBookingModal(true)}
-        className="flex-1 border-2 border-[#8B4513] text-[#8B4513] px-4 py-2 rounded-lg flex items-center justify-center space-x-2"
-      >
-        <Calendar className="w-4 h-4" />
-        <span>Book Session</span>
-      </motion.button>
+//   return (
+//     <>
+//       {/* Existing TutorCard content */}
+//       <motion.button
+//         whileHover={{ scale: 1.02 }}
+//         whileTap={{ scale: 0.98 }}
+//         onClick={() => setShowBookingModal(true)}
+//         className="flex-1 border-2 border-[#8B4513] text-[#8B4513] px-4 py-2 rounded-lg flex items-center justify-center space-x-2"
+//       >
+//         <Calendar className="w-4 h-4" />
+//         <span>Book Session</span>
+//       </motion.button>
 
-      <BookingModal 
-        tutor={tutor}
-        isOpen={showBookingModal}
-        onClose={() => setShowBookingModal(false)}
-      />
-    </>
-  );
-};
+//       <BookingModal 
+//         tutor={tutor}
+//         isOpen={showBookingModal}
+//         onClose={() => setShowBookingModal(false)}
+//       />
+//     </>
+//   );
+// };

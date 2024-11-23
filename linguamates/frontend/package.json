@@ -159,6 +159,7 @@
     "data-view-buffer": "^1.0.1",
     "data-view-byte-length": "^1.0.1",
     "data-view-byte-offset": "^1.0.0",
+    "date-fns": "^4.1.0",
     "debug": "^4.3.7",
     "decimal.js": "^10.4.3",
     "dedent": "^0.7.0",

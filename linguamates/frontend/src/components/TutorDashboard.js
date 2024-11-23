@@ -254,7 +254,7 @@ const TutorDashboard = () => {
                 <h2 className="text-xl font-bold text-[#8B4513] mb-6">Quick Actions</h2>
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { icon: Calendar, label: 'Schedule', link: '/schedule' },
+                    { icon: Calendar, label: 'Manage Availability', link: '/availability' },
                     { icon: Users, label: 'Students', link: '/students' },
                     { icon: FileText, label: 'Materials', link: '/materials' },
                     { icon: Settings, label: 'Settings', link: '/settings' }
