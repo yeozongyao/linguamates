@@ -1,25 +1,27 @@
-const express = require('express');
-const multer = require('multer');
-const OpenAI = require('openai');
-const fs = require('fs');
-const uploadsDir = './uploads';
+const express = require("express");
+const multer = require("multer");
+const OpenAI = require("openai");
+const fs = require("fs");
+const os = require("os");
+const uploadsDir = "./uploads";
+const { Readable } = require("stream");
 
-if (!fs.existsSync(uploadsDir)){
-    fs.mkdirSync(uploadsDir);
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
 }
-const cors = require('cors');
-const path = require('path');
-const bcrypt = require('bcrypt');
-require('dotenv').config();
+const cors = require("cors");
+const path = require("path");
+require("dotenv").config();
 
 const app = express();
-const mongoose = require('mongoose');
-const http = require('http');
-const socketIo = require('socket.io');
+const mongoose = require("mongoose");
+const http = require("http");
+const socketIo = require("socket.io");
+const bcrypt = require("bcrypt");
 
-const { google } = require('googleapis');
-const CalendarService = require('./services/calendar-service');
-const Booking = require('./models/booking');
+const { google } = require("googleapis");
+const CalendarService = require("./services/calendar-service");
+const Booking = require("./models/booking");
 
 const OAuth2 = google.auth.OAuth2;
 
@@ -30,46 +32,57 @@ const oauth2Client = new OAuth2(
   process.env.GOOGLE_REDIRECT_URL
 );
 
-mongoose.connect('mongodb://localhost/linguamates', { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+mongoose
+  .connect("mongodb://localhost/linguamates", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // Multer configuration with file filter
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/')
+    cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
-  }
+    cb(
+      null,
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+    );
+  },
 });
 
-const fileFilter = function(req, file, cb) {
+const fileFilter = function (req, file, cb) {
   // Allowed ext
   const filetypes = /flac|m4a|mp3|mp4|mpeg|mpga|oga|ogg|wav|webm/;
   // Check ext
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
   // Check mime
   const mimetype = filetypes.test(file.mimetype);
-''
+  ("");
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb('Error: Unsupported file format. Supported formats: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm');
+    cb(
+      "Error: Unsupported file format. Supported formats: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm"
+    );
   }
 };
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
-  fileFilter: fileFilter
-}).single('audio');
+  fileFilter: fileFilter,
+}).single("audio");
 
 app.use(express.json());
-app.use(cors({
-  origin: "http://localhost:3000",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -78,135 +91,154 @@ const openai = new OpenAI({
 let users = [];
 let sessions = {};
 
-app.post('/api/signup', async (req, res) => {
+app.post("/api/signup", async (req, res) => {
   try {
-    const { username, email, password, role, learningLanguages, teachingLanguages } = req.body;
+    const {
+      username,
+      email,
+      password,
+      role,
+      learningLanguages,
+      teachingLanguages,
+    } = req.body;
 
-    console.log('Signup attempt:', { username, email, role, learningLanguages, teachingLanguages });
+    console.log("Signup attempt:", {
+      username,
+      email,
+      role,
+      learningLanguages,
+      teachingLanguages,
+    });
 
     // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
-      console.log('User already exists:', existingUser.username);
-      return res.status(400).json({ error: 'User already exists' });
+      console.log("User already exists:", existingUser.username);
+      return res.status(400).json({ error: "User already exists" });
     }
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user
-    const newUser = new User({ 
-      username, 
-      email, 
-      password: hashedPassword, 
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
       role,
       learningLanguages,
-      teachingLanguages
+      teachingLanguages,
     });
 
     await newUser.save();
 
-    console.log('New user created:', newUser);
+    console.log("New user created:", newUser);
 
-    res.status(201).json({ message: 'User created successfully', userId: newUser._id });
+    res
+      .status(201)
+      .json({ message: "User created successfully", userId: newUser._id });
   } catch (error) {
-    console.error('Signup error:', error);
-    res.status(500).json({ error: 'An error occurred during signup' });
+    console.error("Signup error:", error);
+    res.status(500).json({ error: "An error occurred during signup" });
   }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post("/api/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
     const user = await User.findOne({ username });
     if (!user) {
-      return res.status(400).json({ error: 'User not found' });
+      return res.status(400).json({ error: "User not found" });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res.status(400).json({ error: 'Invalid password' });
+      return res.status(400).json({ error: "Invalid password" });
     }
 
     const sessionId = Math.random().toString(36).substr(2, 9);
-    sessions[sessionId] = { username: user.username, role: user.role, id: user._id };
+    sessions[sessionId] = {
+      username: user.username,
+      role: user.role,
+      id: user._id,
+    };
 
     res.json({ sessionId, role: user.role });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'An error occurred during login' });
+    console.error("Login error:", error);
+    res.status(500).json({ error: "An error occurred during login" });
   }
 });
 
-
-app.post('/api/logout', (req, res) => {
+app.post("/api/logout", (req, res) => {
   const { sessionId } = req.body;
   if (sessions[sessionId]) {
     delete sessions[sessionId];
-    res.json({ message: 'Logged out successfully' });
+    res.json({ message: "Logged out successfully" });
   } else {
-    res.status(400).json({ error: 'Invalid session' });
+    res.status(400).json({ error: "Invalid session" });
   }
 });
 
-
 // Simple middleware to check if user is logged in
 const isAuthenticated = async (req, res, next) => {
-  const sessionId = req.headers['x-session-id'];
-  console.log('Received session ID:', sessionId);
+  const sessionId = req.headers["x-session-id"];
+  console.log("Received session ID:", sessionId);
 
   if (!sessionId) {
-    console.log('No session ID provided');
-    return res.status(401).json({ error: 'No session ID provided' });
+    console.log("No session ID provided");
+    return res.status(401).json({ error: "No session ID provided" });
   }
 
   if (!sessions[sessionId]) {
-    console.log('Invalid session ID');
-    return res.status(401).json({ error: 'Invalid session' });
+    console.log("Invalid session ID");
+    return res.status(401).json({ error: "Invalid session" });
   }
 
   try {
     const user = await User.findOne({ username: sessions[sessionId].username });
     if (user) {
-      console.log('User authenticated:', user.username);
+      console.log("User authenticated:", user.username);
       req.user = { id: user._id, ...sessions[sessionId] };
       next();
     } else {
-      console.log('User not found in database');
-      res.status(401).json({ error: 'User not found' });
+      console.log("User not found in database");
+      res.status(401).json({ error: "User not found" });
     }
   } catch (error) {
-    console.error('Error in isAuthenticated middleware:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error in isAuthenticated middleware:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-app.get('/api/user', isAuthenticated, async (req, res) => {
+app.get("/api/user", isAuthenticated, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id).select("-password");
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'An error occurred while fetching user data' });
+    console.error("Error fetching user:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching user data" });
   }
 });
 
-app.get('/api/protected', isAuthenticated, (req, res) => {
-  res.json({ message: 'This is a protected route', user: req.user });
+app.get("/api/protected", isAuthenticated, (req, res) => {
+  res.json({ message: "This is a protected route", user: req.user });
 });
 
-app.get('/api/tutors/my-availability', isAuthenticated, async (req, res) => {
+app.get("/api/tutors/my-availability", isAuthenticated, async (req, res) => {
   try {
     const { date } = req.query;
     const tutorId = req.user.id;
 
     const availability = await Availability.findOne({
       tutorId,
-      date: new Date(date)
+      date: new Date(date),
     });
 
     if (!availability) {
@@ -217,55 +249,58 @@ app.get('/api/tutors/my-availability', isAuthenticated, async (req, res) => {
     const bookedSlots = await calendarService.getBookedSlots(tutorId, date);
 
     // Mark slots as booked or available
-    const timeSlots = availability.timeSlots.map(slot => ({
+    const timeSlots = availability.timeSlots.map((slot) => ({
       ...slot,
-      status: bookedSlots.some(bookedSlot => 
-        slot.start === bookedSlot.start || 
-        (slot.start < bookedSlot.end && slot.end > bookedSlot.start)
-      ) ? 'booked' : 'available'
+      status: bookedSlots.some(
+        (bookedSlot) =>
+          slot.start === bookedSlot.start ||
+          (slot.start < bookedSlot.end && slot.end > bookedSlot.start)
+      )
+        ? "booked"
+        : "available",
     }));
 
     res.json({
       ...availability.toObject(),
-      timeSlots
+      timeSlots,
     });
   } catch (error) {
-    console.error('Error fetching availability:', error);
-    res.status(500).json({ error: 'Failed to fetch availability' });
+    console.error("Error fetching availability:", error);
+    res.status(500).json({ error: "Failed to fetch availability" });
   }
 });
 
-app.get('/api/tutors', isAuthenticated, async (req, res) => {
+app.get("/api/tutors", isAuthenticated, async (req, res) => {
   try {
     const { language } = req.query;
-    console.log('Fetching tutors. Requested language:', language);
+    console.log("Fetching tutors. Requested language:", language);
 
-    let query = { $or: [{ role: 'tutor' }, { role: 'both' }] };
+    let query = { $or: [{ role: "tutor" }, { role: "both" }] };
     if (language) {
       query.teachingLanguages = language;
     }
 
-    const tutors = await User.find(query).select('-password');
+    const tutors = await User.find(query).select("-password");
 
-    console.log('Tutor query:', query);
-    console.log('Found tutors:', tutors);
+    console.log("Tutor query:", query);
+    console.log("Found tutors:", tutors);
 
     res.json(tutors);
   } catch (error) {
-    console.error('Error in /api/tutors:', error);
-    res.status(500).json({ error: 'An error occurred while fetching tutors' });
+    console.error("Error in /api/tutors:", error);
+    res.status(500).json({ error: "An error occurred while fetching tutors" });
   }
 });
 
-app.get('/api/tutors/:id', isAuthenticated, async (req, res) => {
+app.get("/api/tutors/:id", isAuthenticated, async (req, res) => {
   try {
     const tutor = await User.findOne({
       _id: req.params.id,
-      $or: [{ role: 'tutor' }, { role: 'both' }]
-    }).select('-password');
+      $or: [{ role: "tutor" }, { role: "both" }],
+    }).select("-password");
 
     if (!tutor) {
-      return res.status(404).json({ error: 'Tutor not found' });
+      return res.status(404).json({ error: "Tutor not found" });
     }
 
     // Return formatted tutor information
@@ -275,45 +310,47 @@ app.get('/api/tutors/:id', isAuthenticated, async (req, res) => {
       email: tutor.email,
       role: tutor.role,
       teachingLanguages: tutor.teachingLanguages || [],
-      isOnline: tutor.isOnline || false
+      isOnline: tutor.isOnline || false,
     };
 
     res.json(tutorInfo);
   } catch (error) {
-    console.error('Error fetching tutor:', error);
-    res.status(500).json({ error: 'Failed to fetch tutor information' });
+    console.error("Error fetching tutor:", error);
+    res.status(500).json({ error: "Failed to fetch tutor information" });
   }
 });
 
-app.get('/api/students', isAuthenticated, async (req, res) => {
+app.get("/api/students", isAuthenticated, async (req, res) => {
   try {
     const { language } = req.query;
-    console.log('Fetching students. Requested language:', language);
+    console.log("Fetching students. Requested language:", language);
 
-    let query = { $or: [{ role: 'student' }, { role: 'both' }] };
+    let query = { $or: [{ role: "student" }, { role: "both" }] };
     if (language) {
       query.learningLanguages = language;
     }
 
-    const students = await User.find(query).select('-password');
+    const students = await User.find(query).select("-password");
 
-    console.log('Filtered students:', students);
+    console.log("Filtered students:", students);
 
     res.json(students);
   } catch (error) {
-    console.error('Error in /api/students:', error);
-    res.status(500).json({ error: 'An error occurred while fetching students' });
+    console.error("Error in /api/students:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching students" });
   }
 });
 
-app.post('/api/get-feedback', async (req, res) => {
+app.post("/api/get-feedback", async (req, res) => {
   try {
     const { transcript, language, feedbackLanguage } = req.body;
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { 
-          role: "system", 
+        {
+          role: "system",
           content: `You are an expert language tutor specializing in ${language}. Your task is to analyze the SENTENCE STRUCTURE, GRAMMAR, and VOCABULARY of the following text, ignoring any transcription errors or pronunciation issues. 
 
           Focus ONLY on these areas:
@@ -347,75 +384,75 @@ app.post('/api/get-feedback', async (req, res) => {
           - DO NOT comment on pronunciation or accent
           - Focus ONLY on how ideas are structured and expressed
           - Be encouraging while providing constructive feedback
-          - Provide specific examples for improvement`
+          - Provide specific examples for improvement`,
         },
-        { 
-          role: "system", 
-          content: `Provide your feedback in ${feedbackLanguage}.` 
+        {
+          role: "system",
+          content: `Provide your feedback in ${feedbackLanguage}.`,
         },
-        { 
-          role: "user", 
-          content: transcript 
-        }
+        {
+          role: "user",
+          content: transcript,
+        },
       ],
     });
     res.json({ feedback: completion.choices[0].message.content });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'An error occurred while getting feedback' });
+    console.error("Error:", error);
+    res.status(500).json({ error: "An error occurred while getting feedback" });
   }
-});;
+});
 
-const { exec } = require('child_process');
-const util = require('util');
+const { exec } = require("child_process");
+const util = require("util");
 const execPromise = util.promisify(exec);
 
-const ISO6391 = require('iso-639-1');
+const ISO6391 = require("iso-639-1");
 
 function convertLanguageCode(code) {
   // Extract the first part of the code (e.g., 'en' from 'en-US')
-  const baseCode = code.split('-')[0].toLowerCase();
-  
+  const baseCode = code.split("-")[0].toLowerCase();
+
   // Validate if it's a valid ISO 639-1 code
   if (ISO6391.validate(baseCode)) {
     return baseCode;
   } else {
     console.warn(`Invalid language code: ${code}. Defaulting to English.`);
-    return 'en';
+    return "en";
   }
 }
 
-app.post('/api/transcribe', (req, res) => {
-  upload(req, res, async function(err) {
+app.post("/api/transcribe", (req, res) => {
+  upload(req, res, async function (err) {
     if (err) {
-      console.error('Upload error:', err);
+      console.error("Upload error:", err);
       return res.status(400).json({ error: err.toString() });
     }
     if (!req.file) {
-      console.error('No file uploaded');
-      return res.status(400).json({ error: 'No file uploaded' });
+      console.error("No file uploaded");
+      return res.status(400).json({ error: "No file uploaded" });
     }
-    
-    console.log('File uploaded successfully:', req.file);
-    console.log('File path:', req.file.path);
-    console.log('File size:', req.file.size);
-    console.log('File mime type:', req.file.mimetype);
+
+    console.log("File uploaded successfully:", req.file);
+    console.log("File path:", req.file.path);
+    console.log("File size:", req.file.size);
+    console.log("File mime type:", req.file.mimetype);
 
     try {
-      console.log('Attempting to transcribe file...');
-      console.log('Language:', req.body.language);
-      const language = convertLanguageCode(req.body.language || 'en');
+      console.log("Attempting to transcribe file...");
+      console.log("Language:", req.body.language);
+      const language = convertLanguageCode(req.body.language || "en");
 
       const transcription = await openai.audio.transcriptions.create({
         file: fs.createReadStream(req.file.path),
         model: "whisper-1",
         language: language,
         response_format: "verbose_json",
-        timestamp_granularities: ["segment"]
+        timestamp_granularities: ["segment"],
       });
 
-      console.log('Transcription successful');
-      console.log('Transcription result:', transcription);
+      console.log("Transcription successful");
+      console.log("Transcription result:", transcription);
 
       // Post-process the transcription to separate speakers
       const processedTranscript = processTranscription(transcription.segments);
@@ -423,15 +460,15 @@ app.post('/api/transcribe', (req, res) => {
       fs.unlinkSync(req.file.path); // Delete the temporary file
       res.json({ transcript: processedTranscript });
     } catch (error) {
-      console.error('Transcription error:', error);
-      console.error('Full error object:', JSON.stringify(error, null, 2));
+      console.error("Transcription error:", error);
+      console.error("Full error object:", JSON.stringify(error, null, 2));
       if (error.response) {
-        console.error('OpenAI API response:', error.response.data);
+        console.error("OpenAI API response:", error.response.data);
       }
-      res.status(500).json({ 
-        error: 'An error occurred while transcribing the audio',
+      res.status(500).json({
+        error: "An error occurred while transcribing the audio",
         details: error.message,
-        openAIError: error.response ? error.response.data : null
+        openAIError: error.response ? error.response.data : null,
       });
     }
   });
@@ -444,22 +481,24 @@ function processTranscription(segments) {
   segments.forEach((segment, index) => {
     if (index > 0) {
       const pauseDuration = segment.start - segments[index - 1].end;
-      if (pauseDuration > 1.5) { // Assume speaker change if pause is longer than 1.5 seconds
-        currentSpeaker = currentSpeaker === "Speaker 1" ? "Speaker 2" : "Speaker 1";
+      if (pauseDuration > 1.5) {
+        // Assume speaker change if pause is longer than 1.5 seconds
+        currentSpeaker =
+          currentSpeaker === "Speaker 1" ? "Speaker 2" : "Speaker 1";
       }
     }
     processedTranscript.push(`${currentSpeaker}: ${segment.text}`);
   });
 
-  return processedTranscript.join('\n');
+  return processedTranscript.join("\n");
 }
 
-app.put('/api/user/update', isAuthenticated, (req, res) => {
+app.put("/api/user/update", isAuthenticated, (req, res) => {
   const { username, email, learningLanguages, teachingLanguages } = req.body;
-  const user = users.find(u => u.username === req.user.username);
+  const user = users.find((u) => u.username === req.user.username);
 
   if (!user) {
-    return res.status(404).json({ error: 'User not found' });
+    return res.status(404).json({ error: "User not found" });
   }
 
   // Update user information
@@ -470,7 +509,9 @@ app.put('/api/user/update', isAuthenticated, (req, res) => {
 
   // Update the session info if username has changed
   if (username !== req.user.username) {
-    const sessionId = Object.keys(sessions).find(key => sessions[key].username === req.user.username);
+    const sessionId = Object.keys(sessions).find(
+      (key) => sessions[key].username === req.user.username
+    );
     if (sessionId) {
       sessions[sessionId].username = username;
     }
@@ -481,17 +522,17 @@ app.put('/api/user/update', isAuthenticated, (req, res) => {
     email: user.email,
     role: user.role,
     learningLanguages: user.learningLanguages,
-    teachingLanguages: user.teachingLanguages
+    teachingLanguages: user.teachingLanguages,
   });
 });
 
 // Define Mongoose schemas
 const MessageSchema = new mongoose.Schema({
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
-  recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
+  recipient: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
   content: String,
   read: { type: Boolean, default: false, index: true },
-  timestamp: { type: Date, default: Date.now }
+  timestamp: { type: Date, default: Date.now },
 });
 
 const UserSchema = new mongoose.Schema({
@@ -501,20 +542,19 @@ const UserSchema = new mongoose.Schema({
   role: String,
   learningLanguages: [String],
   teachingLanguages: [String],
-  tutors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  tutors: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });
 
 MessageSchema.index({ recipient: 1, read: 1 });
 
-const Message = mongoose.model('Message', MessageSchema);
-const User = mongoose.model('User', UserSchema);
+const Message = mongoose.model("Message", MessageSchema);
+const User = mongoose.model("User", UserSchema);
 
 const connectionExists = async (studentId, tutorId) => {
   const student = await User.findById(studentId);
   return student.tutors.includes(tutorId);
 };
-
 
 // Create HTTP server
 const server = http.createServer(app);
@@ -525,68 +565,12 @@ const io = socketIo(server, {
     origin: "http://localhost:3000",
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
-    credentials: true
-  }
-});
-
-// Socket.IO connection handler
-io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
-  
-  // Handle joining a call room
-  socket.on('joinCall', ({ callId, userId }) => {
-    console.log(`User ${userId} joining call room ${callId}`);
-    socket.join(callId);
-    io.to(callId).emit('userJoined', { userId });
-  });
-
-  // Handle leaving a call room
-  socket.on('leaveCall', ({ callId, userId }) => {
-    console.log(`User ${userId} leaving call room ${callId}`);
-    socket.leave(callId);
-    io.to(callId).emit('userLeft', { userId });
-  });
-
-  // Handle call signals (for WebRTC)
-  socket.on('callSignal', ({ callId, signal, userId }) => {
-    console.log(`Received call signal from ${userId} in room ${callId}`);
-    io.to(callId).emit('callSignal', { signal, userId });
-  });
-
-  // Handle messaging during call
-  socket.on('callMessage', ({ callId, message, userId }) => {
-    console.log(`Message in call ${callId} from ${userId}: ${message}`);
-    io.to(callId).emit('callMessage', { message, userId });
-  });
-
-  // Handle general user presence
-  socket.on('join', (userId) => {
-    console.log(`User ${userId} joined general room`);
-    socket.join(userId);
-    io.emit('userOnline', userId);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-    io.emit('userOffline', socket.id);
-  });
-
-  // Handle connection errors
-  socket.on('error', (error) => {
-    console.error('Socket error:', error);
-  });
-});
-
-// Add error handling for the Socket.IO server
-io.engine.on("connection_error", (err) => {
-  console.log('Connection error:', err.req);
-  console.log('Error code:', err.code);
-  console.log('Error message:', err.message);
-  console.log('Error context:', err.context);
+    credentials: true,
+  },
 });
 
 // New API endpoints
-app.post('/api/connect', isAuthenticated, async (req, res) => {
+app.post("/api/connect", isAuthenticated, async (req, res) => {
   try {
     const { tutorId, studentId } = req.body;
     const currentUserId = req.user.id;
@@ -602,16 +586,19 @@ app.post('/api/connect', isAuthenticated, async (req, res) => {
       tutor = await User.findById(currentUserId);
       student = await User.findById(studentId);
     } else {
-      return res.status(400).json({ error: 'Missing tutorId or studentId' });
+      return res.status(400).json({ error: "Missing tutorId or studentId" });
     }
 
     if (!tutor || !student) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Check if connection already exists
-    if (student.tutors.includes(tutor._id) || tutor.students.includes(student._id)) {
-      return res.status(400).json({ error: 'Connection already exists' });
+    if (
+      student.tutors.includes(tutor._id) ||
+      tutor.students.includes(student._id)
+    ) {
+      return res.status(400).json({ error: "Connection already exists" });
     }
 
     // Update the connections
@@ -620,46 +607,50 @@ app.post('/api/connect', isAuthenticated, async (req, res) => {
 
     await Promise.all([student.save(), tutor.save()]);
 
-    res.json({ message: 'Connection established successfully' });
+    res.json({ message: "Connection established successfully" });
   } catch (error) {
-    console.error('Error in /api/connect:', error);
-    res.status(500).json({ error: 'An error occurred while establishing connection' });
+    console.error("Error in /api/connect:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while establishing connection" });
   }
 });
 
 // In server.js, modify the connections endpoint
-app.get('/api/connections', isAuthenticated, async (req, res) => {
+app.get("/api/connections", isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-      .populate('tutors', 'username email teachingLanguages')
-      .populate('students', 'username email learningLanguages');
+      .populate("tutors", "username email teachingLanguages")
+      .populate("students", "username email learningLanguages");
 
     // Return just the tutors array if the user is a student
-    if (user.role === 'student') {
+    if (user.role === "student") {
       return res.json(user.tutors || []);
     }
-    
+
     // Return just the students array if the user is a tutor
-    if (user.role === 'tutor') {
+    if (user.role === "tutor") {
       return res.json(user.students || []);
     }
 
     // For users with role 'both', return both arrays
-    if (user.role === 'both') {
+    if (user.role === "both") {
       return res.json({
         tutors: user.tutors || [],
-        students: user.students || []
+        students: user.students || [],
       });
     }
 
     return res.json([]);
   } catch (error) {
-    console.error('Error in /api/connections:', error);
-    res.status(500).json({ error: 'An error occurred while fetching connections' });
+    console.error("Error in /api/connections:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching connections" });
   }
 });
 
-app.post('/api/message', isAuthenticated, async (req, res) => {
+app.post("/api/message", isAuthenticated, async (req, res) => {
   try {
     const { recipientId, content } = req.body;
     const senderId = req.user.id;
@@ -667,123 +658,137 @@ app.post('/api/message', isAuthenticated, async (req, res) => {
     const message = new Message({
       sender: senderId,
       recipient: recipientId,
-      content
+      content,
     });
 
     await message.save();
 
-    io.to(recipientId).emit('new message', message);
+    io.to(recipientId).emit("new message", message);
 
-    res.json({ message: 'Message sent successfully' });
+    res.json({ message: "Message sent successfully" });
   } catch (error) {
-    res.status(500).json({ error: 'An error occurred while sending the message' });
+    res
+      .status(500)
+      .json({ error: "An error occurred while sending the message" });
   }
 });
 
-app.get('/api/messages', isAuthenticated, async (req, res) => {
+app.get("/api/messages", isAuthenticated, async (req, res) => {
   try {
     const userId = req.user.id;
     const messages = await Message.find({
-      $or: [{ sender: userId }, { recipient: userId }]
-    }).sort({ timestamp: -1 }).limit(50);
+      $or: [{ sender: userId }, { recipient: userId }],
+    })
+      .sort({ timestamp: -1 })
+      .limit(50);
 
     res.json(messages);
   } catch (error) {
-    res.status(500).json({ error: 'An error occurred while fetching messages' });
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching messages" });
   }
 });
 
-app.get('/api/messages/:recipientId', isAuthenticated, async (req, res) => {
+app.get("/api/messages/:recipientId", isAuthenticated, async (req, res) => {
   try {
     const userId = req.user.id;
     const recipientId = req.params.recipientId;
     const messages = await Message.find({
       $or: [
         { sender: userId, recipient: recipientId },
-        { sender: recipientId, recipient: userId }
-      ]
-    }).sort({ timestamp: 1 }).limit(50);
+        { sender: recipientId, recipient: userId },
+      ],
+    })
+      .sort({ timestamp: 1 })
+      .limit(50);
 
     res.json(messages);
   } catch (error) {
-    res.status(500).json({ error: 'An error occurred while fetching messages' });
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching messages" });
   }
 });
 
-app.get('/api/check-users', async (req, res) => {
+app.get("/api/check-users", async (req, res) => {
   try {
-    const users = await User.find().select('-password');
-    console.log('All users in database:', users);
+    const users = await User.find().select("-password");
+    console.log("All users in database:", users);
     res.json(users);
   } catch (error) {
-    console.error('Error checking users:', error);
-    res.status(500).json({ error: 'An error occurred while checking users' });
+    console.error("Error checking users:", error);
+    res.status(500).json({ error: "An error occurred while checking users" });
   }
 });
 
-app.get('/api/unread-messages', isAuthenticated, async (req, res) => {
+app.get("/api/unread-messages", isAuthenticated, async (req, res) => {
   try {
     const userId = req.user.id;
     const unreadMessages = await Message.aggregate([
       {
         $match: {
           recipient: new mongoose.Types.ObjectId(userId),
-          read: false
-        }
+          read: false,
+        },
       },
       {
         $group: {
-          _id: '$sender',
-          count: { $sum: 1 }
-        }
-      }
+          _id: "$sender",
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
     const unreadCounts = {};
-    unreadMessages.forEach(item => {
+    unreadMessages.forEach((item) => {
       unreadCounts[item._id.toString()] = item.count;
     });
 
     res.json(unreadCounts);
   } catch (error) {
-    console.error('Error fetching unread message counts:', error);
-    res.status(500).json({ error: 'An error occurred while fetching unread message counts' });
+    console.error("Error fetching unread message counts:", error);
+    res.status(500).json({
+      error: "An error occurred while fetching unread message counts",
+    });
   }
 });
 
-app.post('/api/mark-messages-read', isAuthenticated, async (req, res) => {
+app.post("/api/mark-messages-read", isAuthenticated, async (req, res) => {
   try {
     const { senderId } = req.body;
     const recipientId = req.user.id;
 
     await Message.updateMany(
-      { 
+      {
         sender: new mongoose.Types.ObjectId(senderId),
         recipient: new mongoose.Types.ObjectId(recipientId),
-        read: false
+        read: false,
       },
       { $set: { read: true } }
     );
 
-    res.json({ message: 'Messages marked as read successfully' });
+    res.json({ message: "Messages marked as read successfully" });
   } catch (error) {
-    console.error('Error marking messages as read:', error);
-    res.status(500).json({ error: 'An error occurred while marking messages as read' });
+    console.error("Error marking messages as read:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while marking messages as read" });
   }
 });
 
 const calendarService = new CalendarService({
   private_key: process.env.GOOGLE_PRIVATE_KEY,
   client_email: process.env.GOOGLE_CLIENT_EMAIL,
-  project_id: process.env.GOOGLE_PROJECT_ID
+  project_id: process.env.GOOGLE_PROJECT_ID,
 });
 
-app.post('/api/bookings', isAuthenticated, async (req, res) => {
+app.post("/api/bookings", isAuthenticated, async (req, res) => {
   try {
     const { tutorId, date, time, language, duration } = req.body;
 
     if (!tutorId || !date || !time || !language) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
     const studentId = req.user.id;
@@ -795,7 +800,7 @@ app.post('/api/bookings', isAuthenticated, async (req, res) => {
     ]);
 
     if (!student || !tutor) {
-      return res.status(404).json({ error: 'Student or tutor not found' });
+      return res.status(404).json({ error: "Student or tutor not found" });
     }
 
     // Create booking record first
@@ -806,7 +811,7 @@ app.post('/api/bookings', isAuthenticated, async (req, res) => {
       time,
       duration: duration || 60,
       language,
-      status: 'scheduled'
+      status: "scheduled",
     });
 
     // Create calendar event
@@ -820,7 +825,7 @@ app.post('/api/bookings', isAuthenticated, async (req, res) => {
       booking.calendarEventId = calendarData.eventId;
       booking.meetingLink = calendarData.meetingLink;
     } catch (calendarError) {
-      console.error('Calendar integration error:', calendarError);
+      console.error("Calendar integration error:", calendarError);
       // Continue with booking creation even if calendar fails
       booking.calendarError = calendarError.message;
     }
@@ -828,7 +833,7 @@ app.post('/api/bookings', isAuthenticated, async (req, res) => {
     await booking.save();
 
     // Notify users
-    io.to(tutorId.toString()).emit('newBooking', {
+    io.to(tutorId.toString()).emit("newBooking", {
       booking: booking.toObject(),
       student: {
         username: student.username,
@@ -838,42 +843,42 @@ app.post('/api/bookings', isAuthenticated, async (req, res) => {
 
     res.status(201).json(booking);
   } catch (error) {
-    console.error('Booking error:', error);
-    res.status(500).json({ 
-      error: 'Failed to create booking',
-      details: error.message 
+    console.error("Booking error:", error);
+    res.status(500).json({
+      error: "Failed to create booking",
+      details: error.message,
     });
   }
 });
 
 // Get user's bookings
-app.get('/api/bookings', isAuthenticated, async (req, res) => {
+app.get("/api/bookings", isAuthenticated, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
 
     let query;
-    if (userRole === 'student') {
+    if (userRole === "student") {
       query = { studentId: userId };
-    } else if (userRole === 'tutor') {
+    } else if (userRole === "tutor") {
       query = { tutorId: userId };
     } else {
       query = { $or: [{ studentId: userId }, { tutorId: userId }] };
     }
 
     const bookings = await Booking.find(query)
-      .populate('tutorId', 'username email')
-      .populate('studentId', 'username email')
+      .populate("tutorId", "username email")
+      .populate("studentId", "username email")
       .sort({ date: 1, time: 1 });
 
     res.json(bookings);
   } catch (error) {
-    console.error('Error fetching bookings:', error);
-    res.status(500).json({ error: 'Failed to fetch bookings' });
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ error: "Failed to fetch bookings" });
   }
 });
 
-app.put('/api/bookings/:id', isAuthenticated, async (req, res) => {
+app.put("/api/bookings/:id", isAuthenticated, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -886,27 +891,26 @@ app.put('/api/bookings/:id', isAuthenticated, async (req, res) => {
 
     res.json(booking);
   } catch (error) {
-    console.error('Error updating booking:', error);
-    res.status(500).json({ error: 'Failed to update booking' });
+    console.error("Error updating booking:", error);
+    res.status(500).json({ error: "Failed to update booking" });
   }
 });
 
-
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Socket.IO server is ready for connections`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Socket.IO server is ready for connections`);
 });
 
 // Cancel booking
-app.post('/api/bookings/:id/cancel', isAuthenticated, async (req, res) => {
+app.post("/api/bookings/:id/cancel", isAuthenticated, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
-      .populate('tutorId', 'email')
-      .populate('studentId', 'email');
+      .populate("tutorId", "email")
+      .populate("studentId", "email");
 
     if (!booking) {
-      return res.status(404).json({ error: 'Booking not found' });
+      return res.status(404).json({ error: "Booking not found" });
     }
 
     // Delete calendar event
@@ -914,53 +918,59 @@ app.post('/api/bookings/:id/cancel', isAuthenticated, async (req, res) => {
       await calendar.events.delete({
         calendarId: booking.tutorId.email,
         eventId: booking.calendarEventId,
-        sendUpdates: 'all'
+        sendUpdates: "all",
       });
     }
 
     // Update booking status
-    booking.status = 'cancelled';
+    booking.status = "cancelled";
     await booking.save();
 
     // Notify users through socket
-    io.to(booking.tutorId._id.toString()).emit('bookingCancelled', booking);
-    io.to(booking.studentId._id.toString()).emit('bookingCancelled', booking);
+    io.to(booking.tutorId._id.toString()).emit("bookingCancelled", booking);
+    io.to(booking.studentId._id.toString()).emit("bookingCancelled", booking);
 
-    res.json({ message: 'Booking cancelled successfully' });
+    res.json({ message: "Booking cancelled successfully" });
   } catch (error) {
-    console.error('Error cancelling booking:', error);
-    res.status(500).json({ error: 'Failed to cancel booking' });
+    console.error("Error cancelling booking:", error);
+    res.status(500).json({ error: "Failed to cancel booking" });
   }
 });
 
 // Add this schema with your other mongoose schemas
 const AvailabilitySchema = new mongoose.Schema({
-  tutorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  tutorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   date: { type: Date, required: true },
-  timeSlots: [{
-    start: { type: String, required: true }, // Format: "HH:mm"
-    end: { type: String, required: true },   // Format: "HH:mm"
-    status: { 
-      type: String, 
-      enum: ['available', 'booked', 'cancelled'], 
-      default: 'available'
-    }
-  }]
+  timeSlots: [
+    {
+      start: { type: String, required: true }, // Format: "HH:mm"
+      end: { type: String, required: true }, // Format: "HH:mm"
+      status: {
+        type: String,
+        enum: ["available", "booked", "cancelled"],
+        default: "available",
+      },
+    },
+  ],
 });
 
 AvailabilitySchema.index({ tutorId: 1, date: 1 });
 
 // Add methods to handle booking status
-AvailabilitySchema.methods.bookTimeSlot = async function(slotIndex) {
-  if (this.timeSlots[slotIndex].status === 'available') {
-    this.timeSlots[slotIndex].status = 'booked';
+AvailabilitySchema.methods.bookTimeSlot = async function (slotIndex) {
+  if (this.timeSlots[slotIndex].status === "available") {
+    this.timeSlots[slotIndex].status = "booked";
     await this.save();
     return true;
   }
   return false;
 };
 
-const Availability = mongoose.model('Availability', AvailabilitySchema);
+const Availability = mongoose.model("Availability", AvailabilitySchema);
 
 // Helper function to create calendar events for availability
 async function createAvailabilityEvents(tutorEmail, date, timeSlots) {
@@ -968,8 +978,8 @@ async function createAvailabilityEvents(tutorEmail, date, timeSlots) {
     const events = [];
 
     for (const slot of timeSlots) {
-      const [startHours, startMinutes] = slot.start.split(':');
-      const [endHours, endMinutes] = slot.end.split(':');
+      const [startHours, startMinutes] = slot.start.split(":");
+      const [endHours, endMinutes] = slot.end.split(":");
 
       const startDateTime = new Date(date);
       startDateTime.setHours(parseInt(startHours), parseInt(startMinutes), 0);
@@ -982,65 +992,64 @@ async function createAvailabilityEvents(tutorEmail, date, timeSlots) {
         description: `Available time slot for ${tutorEmail}`,
         start: {
           dateTime: startDateTime.toISOString(),
-          timeZone: 'UTC'
+          timeZone: "UTC",
         },
         end: {
           dateTime: endDateTime.toISOString(),
-          timeZone: 'UTC'
+          timeZone: "UTC",
         },
-        transparency: 'transparent',
+        transparency: "transparent",
         // Remove attendees and just store the tutor email in extendedProperties
         extendedProperties: {
           private: {
-            tutorEmail: tutorEmail
-          }
-        }
+            tutorEmail: tutorEmail,
+          },
+        },
       };
 
       try {
         const createdEvent = await calendar.events.insert({
           calendarId: process.env.GOOGLE_CLIENT_EMAIL,
-          requestBody: event
+          requestBody: event,
         });
 
         events.push({
           start: slot.start,
           end: slot.end,
-          calendarEventId: createdEvent.data.id
+          calendarEventId: createdEvent.data.id,
         });
       } catch (eventError) {
-        console.error('Error creating individual event:', eventError);
+        console.error("Error creating individual event:", eventError);
         // Continue with other slots even if one fails
-        console.log('Continuing with remaining slots...');
+        console.log("Continuing with remaining slots...");
       }
     }
 
     return events;
   } catch (error) {
-    console.error('Error creating calendar events:', error);
+    console.error("Error creating calendar events:", error);
     throw error;
   }
 }
 
-
-app.post('/api/tutors/availability', isAuthenticated, async (req, res) => {
+app.post("/api/tutors/availability", isAuthenticated, async (req, res) => {
   try {
     const { date, timeSlots } = req.body;
     const tutorId = req.user.id;
 
     if (!Array.isArray(timeSlots) || timeSlots.length === 0) {
-      return res.status(400).json({ error: 'Invalid time slots provided' });
+      return res.status(400).json({ error: "Invalid time slots provided" });
     }
 
     const tutor = await User.findById(tutorId);
     if (!tutor) {
-      return res.status(404).json({ error: 'Tutor not found' });
+      return res.status(404).json({ error: "Tutor not found" });
     }
 
     // Delete existing availability and calendar events
     const existingAvailability = await Availability.findOne({
       tutorId,
-      date: new Date(date)
+      date: new Date(date),
     });
 
     if (existingAvailability) {
@@ -1049,7 +1058,7 @@ app.post('/api/tutors/availability', isAuthenticated, async (req, res) => {
           try {
             await calendarService.deleteEvent(slot.calendarEventId);
           } catch (deleteError) {
-            console.error('Error deleting calendar event:', deleteError);
+            console.error("Error deleting calendar event:", deleteError);
           }
         }
       }
@@ -1067,91 +1076,100 @@ app.post('/api/tutors/availability', isAuthenticated, async (req, res) => {
     const availability = new Availability({
       tutorId,
       date: new Date(date),
-      timeSlots: calendarEvents
+      timeSlots: calendarEvents,
     });
 
     await availability.save();
     res.status(201).json(availability);
   } catch (error) {
-    console.error('Error setting availability:', error);
-    res.status(500).json({ error: 'Failed to set availability' });
+    console.error("Error setting availability:", error);
+    res.status(500).json({ error: "Failed to set availability" });
   }
 });
 
+app.get(
+  "/api/tutors/:tutorId/availability",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const { tutorId } = req.params;
+      const { date } = req.query;
 
+      // Get availability from database
+      const availability = await Availability.findOne({
+        tutorId,
+        date: new Date(date),
+      });
 
-app.get('/api/tutors/:tutorId/availability', isAuthenticated, async (req, res) => {
-  try {
-    const { tutorId } = req.params;
-    const { date } = req.query;
+      if (!availability) {
+        return res.json([]);
+      }
 
-    // Get availability from database
-    const availability = await Availability.findOne({
-      tutorId,
-      date: new Date(date)
-    });
+      // Get booked slots
+      const bookedSlots = await calendarService.getBookedSlots(tutorId, date);
 
-    if (!availability) {
-      return res.json([]);
-    }
+      // Filter out booked slots
+      const availableSlots = availability.timeSlots.filter((slot) => {
+        return !bookedSlots.some(
+          (bookedSlot) =>
+            slot.start === bookedSlot.start ||
+            (slot.start < bookedSlot.end && slot.end > bookedSlot.start)
+        );
+      });
 
-    // Get booked slots
-    const bookedSlots = await calendarService.getBookedSlots(tutorId, date);
-
-    // Filter out booked slots
-    const availableSlots = availability.timeSlots.filter(slot => {
-      return !bookedSlots.some(bookedSlot => 
-        slot.start === bookedSlot.start || 
-        (slot.start < bookedSlot.end && slot.end > bookedSlot.start)
+      res.json(
+        availableSlots.map((slot) => ({
+          start: slot.start,
+          end: slot.end,
+        }))
       );
-    });
-
-    res.json(availableSlots.map(slot => ({
-      start: slot.start,
-      end: slot.end
-    })));
-  } catch (error) {
-    console.error('Error fetching availability:', error);
-    res.status(500).json({ error: 'Failed to fetch availability' });
+    } catch (error) {
+      console.error("Error fetching availability:", error);
+      res.status(500).json({ error: "Failed to fetch availability" });
+    }
   }
-});
+);
 
 // Add an endpoint to handle bookings
-app.post('/api/bookings/:availabilityId/:slotIndex', isAuthenticated, async (req, res) => {
-  try {
-    const { availabilityId, slotIndex } = req.params;
-    const studentId = req.user.id;
+app.post(
+  "/api/bookings/:availabilityId/:slotIndex",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const { availabilityId, slotIndex } = req.params;
+      const studentId = req.user.id;
 
-    const availability = await Availability.findById(availabilityId);
-    if (!availability) {
-      return res.status(404).json({ error: 'Availability not found' });
+      const availability = await Availability.findById(availabilityId);
+      if (!availability) {
+        return res.status(404).json({ error: "Availability not found" });
+      }
+
+      const booked = await availability.bookTimeSlot(slotIndex);
+      if (!booked) {
+        return res.status(400).json({ error: "Time slot is not available" });
+      }
+
+      // Create booking record
+      const booking = new Booking({
+        studentId,
+        tutorId: availability.tutorId,
+        date: availability.date,
+        time: availability.timeSlots[slotIndex].start,
+        duration: 60, // default duration
+        language: req.body.language,
+      });
+
+      await booking.save();
+      res.status(201).json(booking);
+    } catch (error) {
+      console.error("Error booking time slot:", error);
+      res.status(500).json({ error: "Failed to book time slot" });
     }
-
-    const booked = await availability.bookTimeSlot(slotIndex);
-    if (!booked) {
-      return res.status(400).json({ error: 'Time slot is not available' });
-    }
-
-    // Create booking record
-    const booking = new Booking({
-      studentId,
-      tutorId: availability.tutorId,
-      date: availability.date,
-      time: availability.timeSlots[slotIndex].start,
-      duration: 60, // default duration
-      language: req.body.language
-    });
-
-    await booking.save();
-    res.status(201).json(booking);
-  } catch (error) {
-    console.error('Error booking time slot:', error);
-    res.status(500).json({ error: 'Failed to book time slot' });
   }
-});
+);
 
 // Get tutor's calendar
-app.get('/api/tutor/calendar', isAuthenticated, async (req, res) => {
+app.get("/api/tutor/calendar", isAuthenticated, async (req, res) => {
   try {
     const tutorId = req.user.id;
     const { startDate, endDate } = req.query;
@@ -1161,8 +1179,8 @@ app.get('/api/tutor/calendar', isAuthenticated, async (req, res) => {
       tutorId,
       date: {
         $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      }
+        $lte: new Date(endDate),
+      },
     });
 
     // Get all bookings within date range
@@ -1170,41 +1188,280 @@ app.get('/api/tutor/calendar', isAuthenticated, async (req, res) => {
       tutorId,
       date: {
         $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      }
-    }).populate('studentId', 'username email');
+        $lte: new Date(endDate),
+      },
+    }).populate("studentId", "username email");
 
     res.json({
       availabilities,
-      bookings
+      bookings,
     });
   } catch (error) {
-    console.error('Error fetching calendar:', error);
-    res.status(500).json({ error: 'Failed to fetch calendar' });
+    console.error("Error fetching calendar:", error);
+    res.status(500).json({ error: "Failed to fetch calendar" });
   }
 });
 
 // Delete availability
-app.delete('/api/tutors/availability/:id', isAuthenticated, async (req, res) => {
-  try {
-    const availability = await Availability.findOneAndDelete({
-      _id: req.params.id,
-      tutorId: req.user.id
-    });
+app.delete(
+  "/api/tutors/availability/:id",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const availability = await Availability.findOneAndDelete({
+        _id: req.params.id,
+        tutorId: req.user.id,
+      });
 
-    if (!availability) {
-      return res.status(404).json({ error: 'Availability not found' });
+      if (!availability) {
+        return res.status(404).json({ error: "Availability not found" });
+      }
+
+      res.json({ message: "Availability deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting availability:", error);
+      res.status(500).json({ error: "Failed to delete availability" });
     }
-
-    res.json({ message: 'Availability deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting availability:', error);
-    res.status(500).json({ error: 'Failed to delete availability' });
   }
+);
+
+const supportedLanguages = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "pt", name: "Portuguese" },
+  { code: "nl", name: "Dutch" },
+  { code: "ru", name: "Russian" },
+  { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
+  { code: "zh", name: "Chinese" },
+];
+
+// Helper function to convert audio buffer to stream
+function bufferToStream(buffer) {
+  const readable = new Readable();
+  readable.push(buffer);
+  readable.push(null);
+  return readable;
+}
+
+// Add language routes
+app.get("/api/languages", (req, res) => {
+  res.json(supportedLanguages);
 });
 
+// Add this at the top level of your server.js, after your imports
+const activeRooms = new Map();
 
+// Helper function for handling user leaving
+function handleUserLeaving(socket, roomId, userId = null) {
+  try {
+    console.log(`User ${userId || socket.id} leaving room ${roomId}`);
 
+    const roomParticipants = activeRooms.get(roomId);
+    if (roomParticipants) {
+      roomParticipants.delete(socket.id);
+      console.log(
+        `Removed ${socket.id} from room ${roomId}. Remaining participants: ${roomParticipants.size}`
+      );
+
+      if (roomParticipants.size === 0) {
+        activeRooms.delete(roomId);
+        console.log(`Removed empty room ${roomId}`);
+      } else {
+        io.to(roomId).emit("participantUpdate", {
+          participants: Array.from(roomParticipants),
+          count: roomParticipants.size,
+        });
+      }
+    }
+
+    socket.leave(roomId);
+  } catch (error) {
+    console.error("Error in handleUserLeaving:", error);
+  }
+}
+
+// Socket connection handler
+io.on("connection", (socket) => {
+  console.log("New client connected:", socket.id);
+
+  socket.on("joinCall", async ({ sessionId, userId }) => {
+    try {
+      const roomId = `session_${sessionId}`;
+      console.log(`User ${userId} (${socket.id}) joining room ${roomId}`);
+
+      await socket.join(roomId);
+
+      if (!activeRooms.has(roomId)) {
+        activeRooms.set(roomId, new Set());
+      }
+      const roomParticipants = activeRooms.get(roomId);
+      roomParticipants.add(socket.id);
+
+      console.log(
+        `Added ${socket.id} to room ${roomId}. Total participants: ${roomParticipants.size}`
+      );
+
+      // Notify everyone in the room about the participants
+      io.to(roomId).emit("participantUpdate", {
+        participants: Array.from(roomParticipants),
+        count: roomParticipants.size,
+      });
+    } catch (error) {
+      console.error("Error in joinCall:", error);
+    }
+  });
+
+  socket.on("callSignal", ({ sessionId, signal, targetSocketId }) => {
+    try {
+      const roomId = `session_${sessionId}`;
+
+      if (targetSocketId) {
+        socket.to(targetSocketId).emit("callSignal", {
+          fromSocketId: socket.id,
+          signal,
+        });
+        console.log(
+          `Sending direct signal from ${socket.id} to ${targetSocketId}`
+        );
+      } else {
+        socket.to(roomId).emit("callSignal", {
+          fromSocketId: socket.id,
+          signal,
+        });
+        console.log(`Broadcasting signal from ${socket.id} to room ${roomId}`);
+      }
+    } catch (error) {
+      console.error("Error in callSignal:", error);
+    }
+  });
+
+  socket.on("leaveCall", ({ sessionId, userId }) => {
+    try {
+      const roomId = `session_${sessionId}`;
+      handleUserLeaving(socket, roomId, userId);
+    } catch (error) {
+      console.error("Error in leaveCall:", error);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    try {
+      console.log("Client disconnected:", socket.id);
+      activeRooms.forEach((participants, roomId) => {
+        if (participants.has(socket.id)) {
+          handleUserLeaving(socket, roomId);
+        }
+      });
+    } catch (error) {
+      console.error("Error in disconnect:", error);
+    }
+  });
+
+  const FormData = require('form-data');
+
+  // Create temp directory
+  const tempDir = path.join(os.tmpdir(), 'audio-chunks');
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+  
+  socket.on('audioChunk', async ({ audioBlob, fromLanguage, toLanguage, sessionId }) => {
+    let tempFile = null;
+    let fileStream = null;  // Declare fileStream at the top level of the handler
+  
+    try {
+      console.log(`[Translation] Processing audio from ${fromLanguage} to ${toLanguage}`);
+  
+      // Generate unique filename with proper extension
+      const fileName = `chunk-${Date.now()}.webm`;
+      tempFile = path.join(tempDir, fileName);
+  
+      // Write base64 audio to file
+      const buffer = Buffer.from(audioBlob, 'base64');
+      fs.writeFileSync(tempFile, buffer);
+  
+      // Verify file exists and has content
+      const stats = fs.statSync(tempFile);
+      console.log(`[Translation] Audio file size: ${stats.size} bytes`);
+  
+      if (stats.size === 0) {
+        throw new Error('Empty audio file');
+      }
+  
+      // Create file stream for OpenAI
+      fileStream = fs.createReadStream(tempFile);
+      
+      // Log the file details
+      console.log('[Translation] Sending file to OpenAI:', {
+        name: fileName,
+        size: stats.size,
+        path: tempFile
+      });
+  
+      const transcription = await openai.audio.transcriptions.create({
+        file: fileStream,
+        model: "whisper-1",
+        language: fromLanguage,
+        response_format: "text"
+      });
+  
+      console.log('[Translation] Transcription received:', transcription);
+  
+      if (transcription && transcription.trim()) {
+        // Translate
+        const completion = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: `Translate the following text from ${fromLanguage} to ${toLanguage}. Respond only with the translation.`
+            },
+            {
+              role: "user",
+              content: transcription
+            }
+          ]
+        });
+  
+        const translation = completion.choices[0].message.content;
+        console.log('[Translation] Translation:', translation);
+  
+        // Emit to room
+        io.to(`session_${sessionId}`).emit('translation', {
+          original: transcription,
+          translated: translation,
+          fromLanguage,
+          toLanguage
+        });
+      }
+  
+    } catch (error) {
+      console.error('[Translation] Error:', error);
+      // Only emit error if it's not an empty transcription
+      if (error.message !== 'Empty audio file') {
+        socket.emit('translationError', { error: error.message });
+      }
+    } finally {
+      // Clean up file stream
+      if (fileStream) {
+        fileStream.destroy();
+      }
+      
+      // Clean up temporary file
+      if (tempFile && fs.existsSync(tempFile)) {
+        try {
+          fs.unlinkSync(tempFile);
+        } catch (err) {
+          console.error('Error deleting temp file:', err);
+        }
+      }
+    }
+  });
+});
 
 // Make sure you export your server (add this at the end)
 module.exports = { app, server, io };

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { format, isAfter, parseISO } from 'date-fns';
 import { useUser } from '../components/UserContext';
+import SessionCard from '../components/SessionCard';
 
 const ScheduleManagement = () => {
   const { user } = useUser();
@@ -51,89 +52,7 @@ const ScheduleManagement = () => {
     }
   };
 
-// Update the SessionCard component in ScheduleManagement.jsx
-const SessionCard = ({ session }) => {
-  const isUpcoming = isAfter(parseISO(session.date), new Date());
-  
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="bg-white rounded-lg shadow-md p-6"
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="font-semibold text-[#8B4513]">
-            {user.role === 'student' || user.role === 'both' ? session.tutorId.username : session.studentId.username}
-          </h3>
-          <p className="text-sm text-[#6B4423]">{session.language} Lesson</p>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className={`px-3 py-1 rounded-full text-sm ${
-            session.status === 'completed'
-              ? 'bg-green-100 text-green-800'
-              : session.status === 'cancelled'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }`}>
-            {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-          </span>
-          {session.meetingLink && (
-            <span className="text-xs text-green-600 mt-1">
-              Meeting link available
-            </span>
-          )}
-        </div>
-      </div>
 
-      <div className="flex items-center space-x-4 mb-4">
-        <div className="flex items-center text-[#6B4423]">
-          <Calendar className="w-4 h-4 mr-2" />
-          {format(parseISO(session.date), 'MMM d, yyyy')}
-        </div>
-        <div className="flex items-center text-[#6B4423]">
-          <Clock className="w-4 h-4 mr-2" />
-          {session.time}
-        </div>
-      </div>
-
-      {isUpcoming && session.status === 'scheduled' && (
-        <div className="flex space-x-3">
-          {session.meetingLink && (
-            <motion.a
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              href={session.meetingLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 bg-[#8B4513] text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2"
-            >
-              <Video className="w-4 h-4" />
-              <span>Join Call</span>
-            </motion.a>
-          )}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setSelectedSession(session)}
-            className="flex-1 border-2 border-[#8B4513] text-[#8B4513] px-4 py-2 rounded-lg flex items-center justify-center space-x-2"
-          >
-            <FileText className="w-4 h-4" />
-            <span>Details</span>
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => cancelSession(session._id)}
-            className="flex-1 border-2 border-red-500 text-red-500 px-4 py-2 rounded-lg flex items-center justify-center space-x-2"
-          >
-            <X className="w-4 h-4" />
-            <span>Cancel</span>
-          </motion.button>
-        </div>
-      )}
-    </motion.div>
-  );
-};
 
   const filteredSessions = sessions.filter(session => {
     const sessionDate = parseISO(session.date);
