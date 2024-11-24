@@ -15,7 +15,7 @@ const StudentList = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/api/students', {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/students`, {
           headers: { 'x-session-id': localStorage.getItem('sessionId') }
         });
         console.log('Fetched students:', response.data);
@@ -48,7 +48,7 @@ const StudentList = () => {
 
   const connectWithStudent = async (studentId) => {
     try {
-      const response = await axios.post('http://localhost:3001/api/connect', 
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/connect`', 
         { studentId },
         { headers: { 'x-session-id': localStorage.getItem('sessionId') } }
       );
