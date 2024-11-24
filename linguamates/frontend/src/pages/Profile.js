@@ -41,7 +41,7 @@ const Profile = () => {
     const handleSubmit = async (e) => {
       e.preventDefault();
       try {
-        const response = await axios.put('http://localhost:3001/api/user/update', {
+        const response = await axios.put(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/update`, {
           username,
           email,
           learningLanguages,
