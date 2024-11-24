@@ -22,7 +22,7 @@ const Evaluation = () => {
     const fetchFeedback = async () => {
       try {
         console.log("evaluation: , ",localStorage.getItem("sessionId"))
-        const response = await fetch("http://localhost:3001/api/retrieve-feedback", {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/retrieve-feedback`, {
           headers: {
             "Content-Type": "application/json",
             "x-session-id": localStorage.getItem("sessionId"), // Send session ID for authentication
