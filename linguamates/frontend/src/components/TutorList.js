@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Search, 
-  Globe2, 
-  Users, 
-  Star, 
+import {
+  Search,
+  Globe2,
+  Users,
+  Star,
   Phone,
   MessageCircle,
   Calendar,
   Loader2,
   Filter,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
+import TutorCard from "./TutorCard";
 
 const TutorList = () => {
   const [tutors, setTutors] = useState([]);
@@ -33,17 +34,23 @@ const TutorList = () => {
     const fetchData = async () => {
       setLoading(true);
       setError("");
-      
+
       try {
         // Fetch tutors
-        const tutorsResponse = await axios.get('http://localhost:3001/api/tutors', {
-          headers: { 'x-session-id': localStorage.getItem('sessionId') }
-        });
-        
+        const tutorsResponse = await axios.get(
+          "http://localhost:3001/api/tutors",
+          {
+            headers: { "x-session-id": localStorage.getItem("sessionId") },
+          }
+        );
+
         // Fetch connections
-        const connectionsResponse = await axios.get('http://localhost:3001/api/connections', {
-          headers: { 'x-session-id': localStorage.getItem('sessionId') }
-        });
+        const connectionsResponse = await axios.get(
+          "http://localhost:3001/api/connections",
+          {
+            headers: { "x-session-id": localStorage.getItem("sessionId") },
+          }
+        );
 
         // Set tutors
         setTutors(tutorsResponse.data);
@@ -53,15 +60,22 @@ const TutorList = () => {
         if (connectionsResponse.data) {
           if (Array.isArray(connectionsResponse.data)) {
             // If it's a direct array of tutors
-            setConnections(new Set(connectionsResponse.data.map(tutor => tutor._id)));
+            setConnections(
+              new Set(connectionsResponse.data.map((tutor) => tutor._id))
+            );
           } else if (connectionsResponse.data.tutors) {
             // If it has a tutors property
-            setConnections(new Set(connectionsResponse.data.tutors.map(tutor => tutor._id)));
+            setConnections(
+              new Set(connectionsResponse.data.tutors.map((tutor) => tutor._id))
+            );
           }
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
-        setError('Failed to load data: ' + (error.response?.data?.error || error.message));
+        console.error("Error fetching data:", error);
+        setError(
+          "Failed to load data: " +
+            (error.response?.data?.error || error.message)
+        );
       } finally {
         setLoading(false);
       }
@@ -75,30 +89,29 @@ const TutorList = () => {
     let filtered = [...tutors];
 
     if (searchQuery) {
-      filtered = filtered.filter(tutor => 
-        tutor.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tutor.teachingLanguages?.some(lang => 
-          lang.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+      filtered = filtered.filter(
+        (tutor) =>
+          tutor.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          tutor.teachingLanguages?.some((lang) =>
+            lang.toLowerCase().includes(searchQuery.toLowerCase())
+          )
       );
     }
 
     if (filterLanguage) {
-      filtered = filtered.filter(tutor => 
+      filtered = filtered.filter((tutor) =>
         tutor.teachingLanguages?.includes(filterLanguage)
       );
     }
 
     if (availability !== "all") {
-      filtered = filtered.filter(tutor => 
+      filtered = filtered.filter((tutor) =>
         availability === "now" ? tutor.isOnline : true
       );
     }
 
     if (rating !== "all") {
-      filtered = filtered.filter(tutor => 
-        tutor.rating >= parseInt(rating)
-      );
+      filtered = filtered.filter((tutor) => tutor.rating >= parseInt(rating));
     }
 
     setFilteredTutors(filtered);
@@ -110,108 +123,42 @@ const TutorList = () => {
 
   const connectWithTutor = async (tutorId) => {
     try {
+      // console.log("sessionid:",localStorage.getItem("sessionId"))
+      // const response = await axios.post(
+      //   "http://localhost:3001/api/connect",
+      //   { tutorId },
+      //   { headers: { "x-session-id": localStorage.getItem("sessionId") } }
+      // );
       const response = await axios.post(
-        'http://localhost:3001/api/connect', 
-        { tutorId },
-        { headers: { 'x-session-id': localStorage.getItem('sessionId') } }
+        "http://localhost:3001/api/connect",
+        { tutorId: tutorId.toString() }, // Ensure tutorId is a string
+        {
+          headers: {
+            "x-session-id": localStorage.getItem("sessionId"),
+            "Content-Type": "application/json",
+          }
+        }
       );
-      
+      console.log("responding:", response)
+      console.log("made the call")
+
       // Add to connections if successful
-      setConnections(prev => new Set([...prev, tutorId]));
+      setConnections((prev) => new Set([...prev, tutorId]));
     } catch (error) {
-      console.error('Error connecting with tutor:', error);
-      setError(error.response?.data?.error || 'Failed to connect with tutor');
+      console.error("Error connecting with tutor:", error);
+      setError(error.response?.data?.error || "Failed to connect with tutor");
     }
   };
 
-  const TutorCard = ({ tutor }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="bg-white rounded-xl shadow-md overflow-hidden"
-    >
-      <div className="relative">
-        <div className="h-32 bg-gradient-to-r from-[#fff5d6] to-[#ffe4a0]" />
-        <div className="absolute bottom-0 transform translate-y-1/2 left-6">
-          <div className="w-24 h-24 rounded-full bg-white p-1 shadow-lg">
-            <div className="w-full h-full rounded-full bg-[#8B4513] flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">
-                {tutor.username.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="pt-16 p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="text-xl font-semibold text-[#8B4513] mb-1">{tutor.username}</h3>
-            <div className="flex items-center text-[#6B4423]">
-              <Star className="w-4 h-4 fill-current text-yellow-400 mr-1" />
-              <span>{tutor.rating || "4.5"} ({tutor.reviewCount || "24"} reviews)</span>
-            </div>
-          </div>
-          <div className={`px-3 py-1 rounded-full text-sm ${
-            tutor.isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-          }`}>
-            {tutor.isOnline ? 'Online' : 'Offline'}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center text-[#6B4423]">
-            <Globe2 className="w-5 h-5 mr-2 text-[#8B4513]" />
-            <span>Teaching: {tutor.teachingLanguages?.join(", ")}</span>
-          </div>
-
-          <div className="flex items-center text-[#6B4423]">
-            <Calendar className="w-5 h-5 mr-2 text-[#8B4513]" />
-            <span>Next available: Today, 3:00 PM</span>
-          </div>
-        </div>
-
-        <div className="mt-6 flex gap-3">
-          {isConnected(tutor._id) ? (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2"
-            >
-              <Phone className="w-4 h-4" />
-              <span>Call Tutor</span>
-            </motion.button>
-          ) : (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => connectWithTutor(tutor._id)}
-              className="flex-1 bg-[#8B4513] text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>Connect</span>
-            </motion.button>
-          )}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex-1 border-2 border-[#8B4513] text-[#8B4513] px-4 py-2 rounded-lg flex items-center justify-center space-x-2"
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Book</span>
-          </motion.button>
-        </div>
-      </div>
-    </motion.div>
-  );
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#fff5d6] to-[#ffe4a0] flex items-center justify-center">
         <div className="flex items-center space-x-3">
           <Loader2 className="w-6 h-6 text-[#8B4513] animate-spin" />
-          <span className="text-[#8B4513] font-medium">Finding tutors for you...</span>
+          <span className="text-[#8B4513] font-medium">
+            Finding tutors for you...
+          </span>
         </div>
       </div>
     );
@@ -232,8 +179,12 @@ const TutorList = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-[#8B4513] mb-2">Find Your Perfect Tutor</h2>
-            <p className="text-[#6B4423]">Connect with experienced language tutors worldwide</p>
+            <h2 className="text-3xl font-bold text-[#8B4513] mb-2">
+              Find Your Perfect Tutor
+            </h2>
+            <p className="text-[#6B4423]">
+              Connect with experienced language tutors worldwide
+            </p>
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -282,7 +233,9 @@ const TutorList = () => {
                   >
                     <option value="">All Languages</option>
                     {languageOptions.map((lang) => (
-                      <option key={lang} value={lang}>{lang}</option>
+                      <option key={lang} value={lang}>
+                        {lang}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -324,13 +277,28 @@ const TutorList = () => {
         {filteredTutors.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-[#8B4513] mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-[#8B4513] mb-2">No tutors found</h3>
-            <p className="text-[#6B4423]">Try adjusting your filters to find more tutors</p>
+            <h3 className="text-xl font-semibold text-[#8B4513] mb-2">
+              No tutors found
+            </h3>
+            <p className="text-[#6B4423]">
+              Try adjusting your filters to find more tutors
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTutors.map((tutor) => (
-              <TutorCard key={tutor._id} tutor={tutor} />
+              // <TutorCard
+              //   key={tutor._id}
+              //   tutor={tutor}
+              //   isConnected={isConnected}
+              //   onConnect={connectWithTutor}
+              // />
+              <TutorCard
+                key={tutor._id}
+                tutor={tutor}
+                isConnected={isConnected}
+                onConnect={() => connectWithTutor(tutor._id)}  // Wrap in arrow function to only pass tutorId
+              />
             ))}
           </div>
         )}

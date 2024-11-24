@@ -5,6 +5,7 @@ const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -20,16 +21,37 @@ export const UserProvider = ({ children }) => {
           localStorage.removeItem('sessionId');
         }
       }
+      setLoading(false);
     };
 
     fetchUser();
   }, []);
 
+  const logout = async () => {
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+      if (sessionId) {
+        await axios.post('http://localhost:3001/api/logout', { sessionId });
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('sessionId');
+      setUser(null);
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider value={{ user, setUser, loading, logout }}>
       {children}
     </UserContext.Provider>
   );
 };
 
-export const useUser = () => useContext(UserContext);
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
+};

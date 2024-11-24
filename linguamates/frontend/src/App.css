@@ -61,3 +61,39 @@
   border-radius: 4px;
   margin-top: 20px;
 }
+
+/* Add to your global.css or equivalent */
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+video {
+  object-fit: cover;
+}
+
+#remoteVideos {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+@media (max-width: 768px) {
+  #remoteVideos {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Optional: Add smooth transitions */
+.transition-colors {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Optional: Improve video container aesthetics */
+.video-container {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out;
+}
+
+.video-container:hover {
+  transform: scale(1.01);
+}
