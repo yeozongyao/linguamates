@@ -23,7 +23,7 @@ const BookingModal = ({ tutor, isOpen, onClose }) => {
 
     setLoading(true);
     try {
-      await axios.post('http://localhost:3001/api/bookings', {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/bookings`, {
         tutorId: tutor._id,
         date: selectedDate,
         time: selectedTime
