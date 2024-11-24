@@ -45,7 +45,7 @@ const CallPage = () => {
 
   // Initialize Socket.IO connection
   useEffect(() => {
-    socket.current = io('http://localhost:3001', {
+    socket.current = io(`${process.env.REACT_APP_API_URL}`, {
       withCredentials: true
     });
 
@@ -69,7 +69,7 @@ const CallPage = () => {
   useEffect(() => {
     const fetchTutorDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/tutors/${tutorId}`, {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/tutors/${tutorID}`, {
           headers: { 'x-session-id': localStorage.getItem('sessionId') }
         });
         setTutor(response.data);
