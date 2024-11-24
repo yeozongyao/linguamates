@@ -284,9 +284,6 @@
     "fs-extra": "^10.1.0",
     "fs-monkey": "^1.0.6",
     "fs.realpath": "^1.0.0",
-    "overrides": {
-      "fsevents": "^2.3.3"
-    },
     "function-bind": "^1.1.2",
     "function.prototype.name": "^1.1.6",
     "functions-have-names": "^1.2.3",
@@ -903,6 +900,9 @@
     "yargs-parser": "^20.2.9",
     "yocto-queue": "^0.1.0"
   },
+  "overrides": {
+      "fsevents": "^2.3.3"
+    },
   "devDependencies": {
     "tailwindcss": "^3.4.13"
   },
