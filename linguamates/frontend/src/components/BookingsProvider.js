@@ -9,7 +9,7 @@ export const BookingsProvider = ({ children }) => {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/bookings', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/bookings`, {
         headers: { 'x-session-id': localStorage.getItem('sessionId') }
       });
       setBookings(response.data);
@@ -22,7 +22,7 @@ export const BookingsProvider = ({ children }) => {
 
   const addBooking = async (booking) => {
     try {
-      const response = await axios.post('http://localhost:3001/api/bookings', booking, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/bookings`, booking, {
         headers: { 'x-session-id': localStorage.getItem('sessionId') }
       });
       setBookings(prev => [...prev, response.data]);
