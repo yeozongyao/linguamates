@@ -19,7 +19,7 @@ const FloatingChatIcon = () => {
 
   useEffect(() => {
     if (user) {
-      const newSocket = io('http://localhost:3001', {
+      const newSocket = io(`${process.env.REACT_APP_API_URL}`, {
         withCredentials: true
       });
       
@@ -64,7 +64,7 @@ const FloatingChatIcon = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('http://localhost:3001/api/connections', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/connections`, {
         headers: { 'x-session-id': localStorage.getItem('sessionId') }
       });
       
@@ -87,7 +87,7 @@ const FloatingChatIcon = () => {
 
   const fetchUnreadMessages = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/unread-messages', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/unread-messages`, {
         headers: { 'x-session-id': localStorage.getItem('sessionId') }
       });
       setUnreadMessages(response.data || {});
@@ -99,13 +99,13 @@ const FloatingChatIcon = () => {
 
   const fetchMessages = async (connectionId) => {
     try {
-      const response = await axios.get(`http://localhost:3001/api/messages/${connectionId}`, {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/messages/${connectionId}`, {
         headers: { 'x-session-id': localStorage.getItem('sessionId') }
       });
       setMessages(response.data || []);
       setUnreadMessages(prev => ({...prev, [connectionId]: 0}));
       
-      await axios.post('http://localhost:3001/api/mark-messages-read', 
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/mark-messages-read`, 
         { senderId: connectionId },
         { headers: { 'x-session-id': localStorage.getItem('sessionId') } }
       );
@@ -120,7 +120,7 @@ const FloatingChatIcon = () => {
     if (!selectedConnection || !newMessage.trim()) return;
 
     try {
-      await axios.post('http://localhost:3001/api/message', {
+      await axios.post('`${process.env.REACT_APP_API_URL}/api/message`', {
         recipientId: selectedConnection._id,
         content: newMessage.trim()
       }, {
