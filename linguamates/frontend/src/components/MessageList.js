@@ -10,7 +10,7 @@ const MessageList = ({ userId, userRole }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3001');
+    const newSocket = io(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}`);
     setSocket(newSocket);
 
     newSocket.on('new message', (message) => {
@@ -26,7 +26,7 @@ const MessageList = ({ userId, userRole }) => {
 
   const fetchConnections = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/connections', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/connections`, {
         headers: { 'x-session-id': localStorage.getItem('sessionId') }
       });
       setConnections(userRole === 'student' ? response.data.tutors : response.data.students);
@@ -37,7 +37,7 @@ const MessageList = ({ userId, userRole }) => {
 
   const fetchMessages = async (connectionId) => {
     try {
-      const response = await axios.get(`http://localhost:3001/api/messages/${connectionId}`, {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/messages/${connectionId}`, {
         headers: { 'x-session-id': localStorage.getItem('sessionId') }
       });
       setMessages(response.data);
