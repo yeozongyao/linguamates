@@ -31,10 +31,10 @@ const TutorDashboard = () => {
     const fetchDashboardData = async () => {
       try {
         const [earningsRes, studentsRes, sessionsRes, statsRes] = await Promise.all([
-          axios.get('http://localhost:3001/api/tutor/earnings'),
-          axios.get('http://localhost:3001/api/tutor/students'),
-          axios.get('http://localhost:3001/api/tutor/sessions'),
-          axios.get('http://localhost:3001/api/tutor/stats')
+          axios.get(`${process.env.REACT_APP_API_URL}/api/tutor/earnings`),
+          axios.get(`${process.env.REACT_APP_API_URL}/api/tutor/students`),
+          axios.get(`${process.env.REACT_APP_API_URL}/api/tutor/sessions`),
+          axios.get(`${process.env.REACT_APP_API_URL}/api/tutor/stats`)
         ].map(promise => promise.catch(error => ({ error }))));
 
         if (earningsRes.data) setEarnings(earningsRes.data);
