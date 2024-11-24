@@ -38,7 +38,7 @@ const TutorList = () => {
       try {
         // Fetch tutors
         const tutorsResponse = await axios.get(
-          "http://localhost:3001/api/tutors",
+          `${process.env.REACT_APP_API_URL}/api/tutors`,
           {
             headers: { "x-session-id": localStorage.getItem("sessionId") },
           }
@@ -46,7 +46,7 @@ const TutorList = () => {
 
         // Fetch connections
         const connectionsResponse = await axios.get(
-          "http://localhost:3001/api/connections",
+          `${process.env.REACT_APP_API_URL}/api/connections`,
           {
             headers: { "x-session-id": localStorage.getItem("sessionId") },
           }
@@ -130,7 +130,7 @@ const TutorList = () => {
       //   { headers: { "x-session-id": localStorage.getItem("sessionId") } }
       // );
       const response = await axios.post(
-        "http://localhost:3001/api/connect",
+        `${process.env.REACT_APP_API_URL}/api/connect`,
         { tutorId: tutorId.toString() }, // Ensure tutorId is a string
         {
           headers: {
