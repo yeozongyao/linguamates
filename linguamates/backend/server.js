@@ -35,7 +35,7 @@ const oauth2Client = new OAuth2(
 );
 
 mongoose
-  .connect("mongodb://localhost/linguamates", {
+  .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
