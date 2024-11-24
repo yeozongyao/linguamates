@@ -20,6 +20,10 @@ import FloatingChatIcon from "./components/FloatingChatIcon";
 import TutorAvailability from "./pages/TutorAvailability";
 import SessionBooking from "./pages/SessionBooking";
 import ScheduleManagement from "./pages/ScheduleManagement";
+import Evaluation from "./pages/Evaluation"
+import Schedule from "./pages/Schedule";
+import Goals from "./pages/Goals";
+
 
 const queryClient = new QueryClient();
 
@@ -116,6 +120,14 @@ const AppContent = () => {
                 }
               />
             </Routes>
+            <Route
+              path="/evaluation"
+              element={
+                <ProtectedRoute>
+                  <Evaluation />
+                </ProtectedRoute>
+              }
+            />
           </main>
           <Footer />
           {user && <FloatingChatIcon />}
