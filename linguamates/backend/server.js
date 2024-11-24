@@ -79,8 +79,8 @@ const upload = multer({
 
 app.use(express.json());
 app.use(
-  cors({
-    origin: "http://localhost:3000",
+  cors({ 
+    origin: "https://linguamates-three.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
@@ -667,7 +667,7 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "https://linguamates-three.vercel.app",
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true,
