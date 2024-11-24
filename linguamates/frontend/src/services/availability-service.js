@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 class AvailabilityService {
-  constructor(baseURL = 'http://localhost:3001') {
+  constructor(baseURL = `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}`) {
     this.axios = axios.create({
       baseURL,
       headers: {
