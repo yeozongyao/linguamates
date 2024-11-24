@@ -9,7 +9,7 @@ const UserInfo = () => {
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/api/user', {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/user`, {
           headers: { 'x-session-id': localStorage.getItem('sessionId') }
         });
         setUser(response.data);
