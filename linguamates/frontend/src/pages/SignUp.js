@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TermsAndConditions } from "../components/constants/TermsAndConditions";
 import { useUser } from "../components/UserContext";
 import { Check, BookOpen, ChevronDown, Loader2 } from "lucide-react";
+require("dotenv").config();
+
 
 const SignUp = () => {
   const [username, setUsername] = useState("");
@@ -40,10 +42,15 @@ const SignUp = () => {
         teachingLanguages,
       });
 
-      const loginResponse = await axios.post("http://localhost:3001/api/login", {
+      // const loginResponse = await axios.post("http://localhost:3001/api/login", {
+      //   username,
+      //   password,
+      // });
+      const loginResponse = await axios.post(`${process.env.MONGODB_URI || 'http://localhost:3001'}/api/login`, {
         username,
         password,
       });
+
 
       localStorage.setItem("sessionId", loginResponse.data.sessionId);
 
