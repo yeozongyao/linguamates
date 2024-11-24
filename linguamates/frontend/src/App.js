@@ -21,7 +21,6 @@ import TutorAvailability from "./pages/TutorAvailability";
 import SessionBooking from "./pages/SessionBooking";
 import ScheduleManagement from "./pages/ScheduleManagement";
 import Evaluation from "./pages/Evaluation"
-import Schedule from "./pages/Schedule";
 import Goals from "./pages/Goals";
 
 
@@ -119,15 +118,23 @@ const AppContent = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/evaluation"
+                element={
+                  <ProtectedRoute>
+                    <Evaluation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/goals"
+                element={
+                  <ProtectedRoute>
+                    <Goals />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
-            <Route
-              path="/evaluation"
-              element={
-                <ProtectedRoute>
-                  <Evaluation />
-                </ProtectedRoute>
-              }
-            />
           </main>
           <Footer />
           {user && <FloatingChatIcon />}

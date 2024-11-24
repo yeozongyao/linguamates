@@ -17,7 +17,6 @@ import io from "socket.io-client";
 import { useUser } from "../components/UserContext";
 import TranslationSettings from "./TranslationSettings";
 import VideoContainer from "./VideoContainer";
-import lamejs from 'lamejs';
 
 const SessionCard = ({ session, onShowDetails, onCancelSession }) => {
   const { user } = useUser();
@@ -326,6 +325,24 @@ const SessionCard = ({ session, onShowDetails, onCancelSession }) => {
 // In SessionCard.js
 
 // In SessionCard.js:
+const getSupportedMimeType = () => {
+  const types = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+    'audio/mp4',
+    'audio/wav'
+  ];
+  
+  for (const type of types) {
+    if (MediaRecorder.isTypeSupported(type)) {
+      console.log('[Recording] Using MIME type:', type);
+      return type;
+    }
+  }
+  throw new Error('No supported audio MIME type found');
+};
 
 useEffect(() => {
     if (!inCall || !isTranslating || !fromLanguage || !toLanguage) return;
@@ -344,6 +361,8 @@ useEffect(() => {
             noiseSuppression: true,
           }
         });
+              // Get supported MIME type
+        const mimeType = getSupportedMimeType();
   
         // Explicitly use WebM with opus codec
         recorder = new MediaRecorder(audioStream, {
@@ -374,7 +393,8 @@ useEffect(() => {
                   audioBlob: base64Audio,
                   fromLanguage,
                   toLanguage,
-                  sessionId: session._id
+                  sessionId: session._id,
+                  mimeType
                 });
               };
               reader.readAsDataURL(blob);
@@ -383,11 +403,24 @@ useEffect(() => {
             }
           }
           // Start next recording after a short delay
+          // setTimeout(() => {
+          //   if (recorder.state === 'inactive') {
+          //     recorder.start();
+          //   }
+          // }, 100);
           setTimeout(() => {
-            if (recorder.state === 'inactive') {
-              recorder.start();
+            if (recorder && recorder.state === 'inactive' && isTranslating) {
+              try {
+                recorder.start();
+                console.log('[Translation] Started new recording segment');
+              } catch (err) {
+                console.error('[Translation] Failed to start new recording:', err);
+                setError('Failed to restart recording');
+                setIsTranslating(false);
+              }
             }
           }, 100);
+  
         };
   
         // Start recording
@@ -561,87 +594,82 @@ useEffect(() => {
         )}
       </motion.div>
 
+   
       {inCall && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-          <div className="w-full h-full max-w-7xl p-4 flex flex-col">
-            <TranslationSettings
-              languages={languages}
-              fromLanguage={fromLanguage}
-              toLanguage={toLanguage}
-              setFromLanguage={setFromLanguage}
-              setToLanguage={setToLanguage}
-              isTranslating={isTranslating}
-              setIsTranslating={setIsTranslating}
-            />
+  <VideoContainer
+    isLocal={true}
+    videoRef={localVideoRef}
+    username="You"
+    isVideoEnabled={isVideoEnabled}
+    isAudioEnabled={isAudioEnabled}
+    currentSubtitle={currentSubtitle}
+  >
+    {/* Translation Settings */}
+    <div className="absolute top-0 left-0 right-0 p-4 bg-black/50">
+      <TranslationSettings
+        languages={languages}
+        fromLanguage={fromLanguage}
+        toLanguage={toLanguage}
+        setFromLanguage={setFromLanguage}
+        setToLanguage={setToLanguage}
+        isTranslating={isTranslating}
+        setIsTranslating={setIsTranslating}
+      />
+    </div>
 
-            <div className="relative flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-fr">
-              <VideoContainer
-                isLocal={true}
-                videoRef={localVideoRef}
-                username="You"
-                isVideoEnabled={isVideoEnabled}
-                isAudioEnabled={isAudioEnabled}
-                currentSubtitle={currentSubtitle}
-              />
+    {/* Remote Videos */}
+    <div 
+      id="remoteVideos" 
+      className="absolute top-0 right-0 w-1/2 h-full"
+    />
 
-              <div
-                id="remoteVideos"
-                className="grid gap-4 auto-rows-fr"
-                style={{
-                  aspectRatio: participantCount > 1 ? "16/9" : "auto",
-                }}
-              />
-            </div>
+    {/* Call Controls */}
+    <div className="absolute bottom-0 left-0 right-0 flex justify-center items-center space-x-4 py-6 bg-black/50">
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={toggleAudio}
+        className={`p-4 rounded-full ${
+          isAudioEnabled
+            ? "bg-gray-700 hover:bg-gray-600"
+            : "bg-red-500 hover:bg-red-600"
+        }`}
+      >
+        {isAudioEnabled ? (
+          <Mic className="w-6 h-6 text-white" />
+        ) : (
+          <MicOff className="w-6 h-6 text-white" />
+        )}
+      </motion.button>
 
-            {/* Call Controls */}
-            <div className="mt-4 flex justify-center items-center space-x-4 py-4">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={toggleAudio}
-                className={`p-4 rounded-full transition-colors ${
-                  isAudioEnabled
-                    ? "bg-gray-700 hover:bg-gray-600"
-                    : "bg-red-500 hover:bg-red-600"
-                }`}
-              >
-                {isAudioEnabled ? (
-                  <Mic className="w-6 h-6 text-white" />
-                ) : (
-                  <MicOff className="w-6 h-6 text-white" />
-                )}
-              </motion.button>
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={endCall}
+        className="p-4 rounded-full bg-red-500 hover:bg-red-600"
+      >
+        <Phone className="w-6 h-6 text-white" />
+      </motion.button>
 
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={endCall}
-                className="p-4 rounded-full bg-red-500 hover:bg-red-600 transition-colors"
-              >
-                <Phone className="w-6 h-6 text-white" />
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={toggleVideo}
-                className={`p-4 rounded-full transition-colors ${
-                  isVideoEnabled
-                    ? "bg-gray-700 hover:bg-gray-600"
-                    : "bg-red-500 hover:bg-red-600"
-                }`}
-              >
-                {isVideoEnabled ? (
-                  <Video className="w-6 h-6 text-white" />
-                ) : (
-                  <VideoOff className="w-6 h-6 text-white" />
-                )}
-              </motion.button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={toggleVideo}
+        className={`p-4 rounded-full ${
+          isVideoEnabled
+            ? "bg-gray-700 hover:bg-gray-600"
+            : "bg-red-500 hover:bg-red-600"
+        }`}
+      >
+        {isVideoEnabled ? (
+          <Video className="w-6 h-6 text-white" />
+        ) : (
+          <VideoOff className="w-6 h-6 text-white" />
+        )}
+      </motion.button>
+    </div>
+  </VideoContainer>
+)}
       {/* Error Message */}
       {error && (
         <div className="fixed bottom-4 right-4 bg-red-100 text-red-700 px-4 py-2 rounded-lg shadow-lg z-50">

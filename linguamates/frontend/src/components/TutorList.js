@@ -123,11 +123,24 @@ const TutorList = () => {
 
   const connectWithTutor = async (tutorId) => {
     try {
+      // console.log("sessionid:",localStorage.getItem("sessionId"))
+      // const response = await axios.post(
+      //   "http://localhost:3001/api/connect",
+      //   { tutorId },
+      //   { headers: { "x-session-id": localStorage.getItem("sessionId") } }
+      // );
       const response = await axios.post(
         "http://localhost:3001/api/connect",
-        { tutorId },
-        { headers: { "x-session-id": localStorage.getItem("sessionId") } }
+        { tutorId: tutorId.toString() }, // Ensure tutorId is a string
+        {
+          headers: {
+            "x-session-id": localStorage.getItem("sessionId"),
+            "Content-Type": "application/json",
+          }
+        }
       );
+      console.log("responding:", response)
+      console.log("made the call")
 
       // Add to connections if successful
       setConnections((prev) => new Set([...prev, tutorId]));
@@ -274,11 +287,17 @@ const TutorList = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTutors.map((tutor) => (
+              // <TutorCard
+              //   key={tutor._id}
+              //   tutor={tutor}
+              //   isConnected={isConnected}
+              //   onConnect={connectWithTutor}
+              // />
               <TutorCard
                 key={tutor._id}
                 tutor={tutor}
                 isConnected={isConnected}
-                onConnect={connectWithTutor}
+                onConnect={() => connectWithTutor(tutor._id)}  // Wrap in arrow function to only pass tutorId
               />
             ))}
           </div>

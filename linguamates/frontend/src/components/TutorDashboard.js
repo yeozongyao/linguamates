@@ -255,7 +255,7 @@ const TutorDashboard = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {[
                     { icon: Calendar, label: 'Manage Availability', link: '/availability' },
-                    { icon: Users, label: 'Students', link: '/students' },
+                    { icon: Users, label: 'Evaluation', link: '/evaluation' },
                     { icon: FileText, label: 'Materials', link: '/materials' },
                     { icon: Settings, label: 'Settings', link: '/settings' }
                   ].map((action) => (

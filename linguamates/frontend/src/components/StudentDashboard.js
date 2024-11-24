@@ -24,12 +24,12 @@ const DashboardCard = ({ title, icon: Icon, children }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-xl shadow-md overflow-hidden"
+    className="bg-white rounded-xl shadow-md overflow-visible"
   >
     <div className="p-6">
-      <div className="flex items-center mb-4">
-        <Icon className="w-6 h-6 text-[#8B4513] mr-3" />
-        <h3 className="text-lg font-semibold text-[#8B4513]">{title}</h3>
+      <div className="flex items-center mb-4 overflow-visible">
+        <Icon className="w-6 h-6 text-[#8B4513] mr-3 overflow-visible" />
+        <h3 className="text-lg font-semibold text-[#8B4513] overflow-visible">{title}</h3>
       </div>
       {children}
     </div>
@@ -139,9 +139,9 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fff5d6] to-[#ffe4a0]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col md:flex-row gap-8">
+    <div className="min-h-screen bg-gradient-to-b from-[#fff5d6] to-[#ffe4a0] overflow-visible">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-visible">
+        <div className="flex flex-col md:flex-row gap-8 overflow-visible">
           {/* Sidebar */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -187,7 +187,7 @@ const StudentDashboard = () => {
           </motion.div>
 
           {/* Main Content */}
-          <div className="flex-1 space-y-6">
+          <div className="flex-1 space-y-6 overflow-visible">
             {/* Quick Actions */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -217,7 +217,7 @@ const StudentDashboard = () => {
             </motion.div>
 
             {/* Dashboard Cards */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-6 overflow-visible">
               {/* Updated Upcoming Sessions Card */}
               <DashboardCard title="Upcoming Sessions" icon={Clock}>
                 {loading ? (
@@ -236,7 +236,7 @@ const StudentDashboard = () => {
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 overflow-visible">
                     {upcomingSessions.map((session) => (
                       <SessionCard
                         key={session._id}
