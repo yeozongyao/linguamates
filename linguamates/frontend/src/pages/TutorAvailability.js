@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { format, parseISO, set, isAfter } from 'date-fns';
 import availabilityService from '../services/availability-service';
 
-axios.defaults.baseURL = 'http://localhost:3001';
+axios.defaults.baseURL = `${process.env.REACT_APP_API_URL}`;
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
 const TutorAvailability = () => {
