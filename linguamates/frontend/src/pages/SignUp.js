@@ -54,7 +54,7 @@ const SignUp = () => {
 
       localStorage.setItem("sessionId", loginResponse.data.sessionId);
 
-      const userResponse = await axios.get("http://localhost:3001/api/user", {
+      const userResponse = await axios.get(`${process.env.MONGODB_URI || 'http://localhost:3001'}/api/user`, {
         headers: { "x-session-id": loginResponse.data.sessionId },
       });
       setUser(userResponse.data);
