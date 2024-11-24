@@ -22,7 +22,7 @@ const Login = () => {
       const response = await login(username, password);
       localStorage.setItem('sessionId', response.sessionId);
       
-      const userResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/user, {
+      const userResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/user`, {
         headers: { 'x-session-id': response.sessionId }
       });
       setUser(userResponse.data);
