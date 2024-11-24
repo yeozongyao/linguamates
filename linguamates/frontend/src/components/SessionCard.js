@@ -233,7 +233,7 @@ const SessionCard = ({ session, onShowDetails, onCancelSession }) => {
         console.log("[Call] Initializing call...");
 
         // Fetch languages
-        const langResponse = await fetch("http://localhost:3001/api/languages");
+        const langResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/languages`);
         const langData = await langResponse.json();
         setLanguages(langData);
 
@@ -249,7 +249,7 @@ const SessionCard = ({ session, onShowDetails, onCancelSession }) => {
         }
 
         // Set up socket
-        const socket = io("http://localhost:3001", { withCredentials: true });
+        const socket = io(`${process.env.REACT_APP_API_URL}`, { withCredentials: true });
         socketRef.current = socket;
 
         socket.on("connect", () => {
