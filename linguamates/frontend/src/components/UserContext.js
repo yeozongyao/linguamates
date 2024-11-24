@@ -12,7 +12,7 @@ export const UserProvider = ({ children }) => {
       const sessionId = localStorage.getItem('sessionId');
       if (sessionId) {
         try {
-          const response = await axios.get('http://localhost:3001/api/user', {
+          const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/user`, {
             headers: { 'x-session-id': sessionId }
           });
           setUser(response.data);
@@ -31,7 +31,7 @@ export const UserProvider = ({ children }) => {
     try {
       const sessionId = localStorage.getItem('sessionId');
       if (sessionId) {
-        await axios.post('http://localhost:3001/api/logout', { sessionId });
+        await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/logout`, { sessionId });
       }
     } catch (error) {
       console.error('Logout error:', error);
