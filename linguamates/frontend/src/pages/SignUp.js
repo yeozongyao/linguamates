@@ -5,8 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TermsAndConditions } from "../components/constants/TermsAndConditions";
 import { useUser } from "../components/UserContext";
 import { Check, BookOpen, ChevronDown, Loader2 } from "lucide-react";
-require("dotenv").config();
-
 
 const SignUp = () => {
   const [username, setUsername] = useState("");
@@ -33,7 +31,7 @@ const SignUp = () => {
     }
     setIsLoading(true);
     try {
-      const response = await axios.post(`${process.env.MONGODB_URI || 'http://localhost:3001'}/api/signup`, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/signup`, {
         username,
         email,
         password,
@@ -46,7 +44,7 @@ const SignUp = () => {
       //   username,
       //   password,
       // });
-      const loginResponse = await axios.post(`${process.env.MONGODB_URI || 'http://localhost:3001'}/api/login`, {
+      const loginResponse = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/login`, {
         username,
         password,
       });
@@ -54,7 +52,7 @@ const SignUp = () => {
 
       localStorage.setItem("sessionId", loginResponse.data.sessionId);
 
-      const userResponse = await axios.get(`${process.env.MONGODB_URI || 'http://localhost:3001'}/api/user`, {
+      const userResponse = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/user`, {
         headers: { "x-session-id": loginResponse.data.sessionId },
       });
       setUser(userResponse.data);
