@@ -102,7 +102,7 @@ const FileUpload = () => {
       setTranscript("");
 
       const response = await axios.post(
-        "http://localhost:3001/api/transcribe",
+        `${process.env.REACT_APP_API_URL}/api/transcribe`,
         formData,
         {
           headers: {
