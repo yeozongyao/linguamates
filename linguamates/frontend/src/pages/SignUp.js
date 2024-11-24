@@ -33,7 +33,7 @@ const SignUp = () => {
     }
     setIsLoading(true);
     try {
-      const response = await axios.post("http://localhost:3001/api/signup", {
+      const response = await axios.post(`${process.env.MONGODB_URI || 'http://localhost:3001'}/api/signup`, {
         username,
         email,
         password,
