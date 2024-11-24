@@ -6,7 +6,7 @@ import { format, parseISO } from 'date-fns';
 import { useParams, useNavigate } from 'react-router-dom';
 
 // Set axios defaults
-axios.defaults.baseURL = 'http://localhost:3001';
+axios.defaults.baseURL = `${process.env.REACT_APP_API_URL}`;
 
 const SessionBooking = () => {
   const { tutorId } = useParams();
